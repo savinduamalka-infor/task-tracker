@@ -2,7 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function Signup() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SignupFormData>({
@@ -46,16 +48,44 @@ export default function Signup() {
     },
   });
 
-  const onSubmit = (data: SignupFormData) => {
+  const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/sign-up/email`,
+        {
+          email: data.email,
+          name: data.name,
+          password: data.password,
+          jobTitle: data.jobTitle || undefined,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data) {
+        toast({
+          title: "Account Created",
+          description: "Your account has been created successfully. Please log in.",
+        });
+        navigate("/login");
+      }
+    } catch (error) {
+      const errorMessage =
+        axios.isAxiosError(error) && error.response?.data?.message
+          ? error.response.data.message
+          : "Failed to create account. Please try again.";
+      
       toast({
-        title: "Account Created",
-        description: `Welcome ${data.name}! Your account has been created.`,
+        title: "Sign Up Failed",
+        description: errorMessage,
+        variant: "destructive",
       });
-    }, 1000);
+      setIsLoading(false);
+    }
   };
 
   return (
