@@ -28,6 +28,10 @@ export const taskApi = {
   delete: (id: string) => api.delete(`/api/tasks/${id}`),
 };
 
+export const subtaskApi = {
+  suggest: (title: string, description: string) => api.post("/api/subtasks/suggest", { title, description }),
+};
+
 export const userApi = {
   getAll: () => api.get("/api/users"),
 };

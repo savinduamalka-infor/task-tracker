@@ -13,6 +13,7 @@ import {
   CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2,
 } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
+import { subtaskApi } from "@/lib/api";
 import { format, parseISO } from "date-fns";
 import { Task, TaskStatus } from "@/lib/types";
 
@@ -24,30 +25,38 @@ interface TaskDetailSheetProps {
 }
 
 export function TaskDetailSheet({ task, open, onClose, onAddUpdate }: TaskDetailSheetProps) {
-  const { getUserById, addSuggestedSubtasks } = useTaskStore();
+  const { getUserById } = useTaskStore();
   const [suggesting, setSuggesting] = useState(false);
+  const [subtasks, setSubtasks] = useState<any[]>([]);
 
   if (!task) return null;
 
   const assignee = getUserById(task.assigneeId);
   const reporter = getUserById(task.reportedBy);
 
-  const subtasksDone = task.suggestedSubtasks.filter((s) => s.status === "DONE").length;
-  const subtasksTotal = task.suggestedSubtasks.length;
+  const allSubtasks = [...task.suggestedSubtasks, ...subtasks];
+  const subtasksDone = allSubtasks.filter((s) => s.status === "DONE").length;
+  const subtasksTotal = allSubtasks.length;
   const subtaskProgress = subtasksTotal > 0 ? Math.round((subtasksDone / subtasksTotal) * 100) : 0;
 
-  // Mock LLM subtask suggestion
-  const handleSuggestSubtasks = () => {
+  const handleSuggestSubtasks = async () => {
     setSuggesting(true);
-    setTimeout(() => {
-      const suggestions = [
-        { title: `Research & plan approach for "${task.title}"`, description: "Investigate best practices and outline the implementation plan.", suggestedDate: task.startDate },
-        { title: `Implement core functionality`, description: "Build the main feature logic and integrate with existing code.", suggestedDate: task.dueDate },
-        { title: `Write tests & documentation`, description: "Add unit tests and update relevant documentation.", suggestedDate: task.dueDate },
-      ];
-      addSuggestedSubtasks(task.id, suggestions);
+    try {
+      const response = await subtaskApi.suggest(task.title, task.description || "");
+      if (response.data.subtasks && response.data.subtasks.length > 0) {
+        const newSubtasks = response.data.subtasks.map((st: any, i: number) => ({
+          id: `st-${task.id}-${Date.now()}-${i}`,
+          title: st.title,
+          description: st.description,
+          status: "TODO",
+        }));
+        setSubtasks(newSubtasks);
+      }
+    } catch (error) {
+      console.error("Failed to generate subtasks:", error);
+    } finally {
       setSuggesting(false);
-    }, 1500);
+    }
   };
 
   // Build unified activity feed: updates + subtask completions integrated
@@ -133,7 +142,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate }: TaskDetail
                 </div>
                 <Progress value={subtaskProgress} className="h-1.5 mb-3" />
                 <div className="space-y-1.5">
-                  {task.suggestedSubtasks.map((st) => (
+                  {allSubtasks.map((st) => (
                     <div
                       key={st.id}
                       className="flex items-center gap-2 text-sm rounded-md p-2 bg-muted/30"
@@ -177,7 +186,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate }: TaskDetail
                   const author = getUserById(update.updatedBy);
                   const initials = author?.name.split(" ").map((n) => n[0]).join("") ?? "?";
                   const completedSubs = (update.subtaskCompletions ?? [])
-                    .map((id) => task.suggestedSubtasks.find((st) => st.id === id))
+                    .map((id) => allSubtasks.find((st) => st.id === id))
                     .filter(Boolean);
 
                   return (
