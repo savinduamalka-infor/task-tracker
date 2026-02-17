@@ -10,7 +10,7 @@ export async function getSession(req: Request, res: Response) {
     });
 
     if (!session) {
-      res.status(401).json({ session: null });
+      res.status(200).json({ session: null, user: null });
       return;
     }
 
@@ -20,7 +20,7 @@ export async function getSession(req: Request, res: Response) {
     });
   } catch (err) {
     console.error("/api/auth/session error", err);
-    res.status(500).json({ error: "session_lookup_failed" });
+    res.status(200).json({ session: null, user: null });
   }
 }
 

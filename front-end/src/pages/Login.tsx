@@ -52,12 +52,13 @@ export default function Login() {
           headers: {
             "Content-Type": "application/json",
           },
+          withCredentials: true,
         }
       );
 
       if (response.data?.user) {
         const userData = {
-          id: response.data.user._id || response.data.user.id,
+          id: response.data.user.id,
           email: response.data.user.email,
           name: response.data.user.name,
           role: response.data.user.role,

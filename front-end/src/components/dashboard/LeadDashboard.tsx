@@ -2,15 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Plus, ListTodo, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useTaskStore } from "@/lib/task-store";
+import { Task } from "@/lib/types";
 import { AiSummary } from "@/components/AiSummary";
 
 interface LeadDashboardProps {
   onCreateTask: () => void;
+  tasks: Task[];
 }
 
-export function LeadDashboard({ onCreateTask }: LeadDashboardProps) {
-  const { tasks } = useTaskStore();
+export function LeadDashboard({ onCreateTask, tasks }: LeadDashboardProps) {
 
   const todo = tasks.filter((t) => t.status === "TODO").length;
   const inProgress = tasks.filter((t) => t.status === "IN_PROGRESS").length;

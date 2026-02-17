@@ -1,5 +1,5 @@
 import { TaskStatus } from "@/lib/types";
-import { useTaskStore } from "@/lib/task-store";
+import { Task } from "@/lib/types";
 import { TaskCard } from "./TaskCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -19,20 +19,15 @@ const columnAccent: Record<TaskStatus, string> = {
 
 interface TaskBoardProps {
   onTaskClick: (taskId: string) => void;
-  filteredTaskIds?: string[];
+  tasks: Task[];
 }
 
-export function TaskBoard({ onTaskClick, filteredTaskIds }: TaskBoardProps) {
-  const { tasks } = useTaskStore();
-
-  const visibleTasks = filteredTaskIds
-    ? tasks.filter((t) => filteredTaskIds.includes(t.id))
-    : tasks;
+export function TaskBoard({ onTaskClick, tasks }: TaskBoardProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {columns.map((col) => {
-        const colTasks = visibleTasks.filter((t) => t.status === col.status);
+        const colTasks = tasks.filter((t) => t.status === col.status);
         return (
           <div key={col.status} className="flex flex-col">
             <div className="flex items-center gap-2 mb-3">

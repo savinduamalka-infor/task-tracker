@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { Task, TaskUpdate, TaskStatus, TaskPriority, User, UserRole, SuggestedSubtask } from "./types";
-import { mockTasks, mockUsers } from "./mock-data";
 
 interface TaskStore {
   tasks: Task[];
-  users: User[];
   currentUser: User;
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
@@ -32,9 +30,9 @@ const DEFAULT_USER: User = {
 };
 
 export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [currentRole, setCurrentRole] = useState<UserRole>("Lead");
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
+  const [currentUser, setCurrentUser] = useState<User>(DEFAULT_USER);
 
   const logout = useCallback(() => {
     setCurrentUser(DEFAULT_USER);
@@ -102,7 +100,9 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const getUserById = useCallback(
-    (id: string) => mockUsers.find((u) => u.id === id),
+    (id: string) => {
+      return { id, name: "User", email: "user@example.com", role: "Member" as UserRole, teamId: "", jobTitle: "", isActive: true, lastUpdateSubmitted: null };
+    },
     []
   );
 
@@ -110,7 +110,6 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
     <TaskStoreContext.Provider
       value={{
         tasks,
-        users: mockUsers,
         currentUser,
         currentRole,
         setCurrentRole,
