@@ -13,3 +13,13 @@ export async function createTask(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to create task" });
   }
 }
+
+export async function getAllTasks(req: Request, res: Response) {
+  try {
+    const tasks = await TaskModel.find();
+    res.json(tasks);
+  } catch (error) {
+    console.error("Get tasks error:", error);
+    res.status(500).json({ error: "Failed to get tasks" });
+  }
+}
