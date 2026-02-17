@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -20,10 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTaskStore } from "@/lib/task-store";
+import { taskApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { TaskStatus } from "@/lib/types";
-import { useState } from "react";
-import { CheckCircle2, ListChecks } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 const schema = z
   .object({
@@ -43,12 +42,12 @@ interface DailyUpdateDialogProps {
   taskId: string | null;
   currentStatus?: TaskStatus;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
-export function DailyUpdateDialog({ open, taskId, currentStatus, onClose }: DailyUpdateDialogProps) {
-  const { addUpdate, tasks } = useTaskStore();
-  const task = tasks.find((t) => t.id === taskId);
-  const [completedSubtasks, setCompletedSubtasks] = useState<string[]>([]);
+export function DailyUpdateDialog({ open, taskId, currentStatus, onClose, onSuccess }: DailyUpdateDialogProps) {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
   const {
     register,
@@ -60,7 +59,7 @@ export function DailyUpdateDialog({ open, taskId, currentStatus, onClose }: Dail
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      status: currentStatus ?? task?.status ?? "IN_PROGRESS",
+      status: currentStatus ?? "IN_PROGRESS",
       note: "",
       blockedReason: "",
     },
@@ -68,45 +67,56 @@ export function DailyUpdateDialog({ open, taskId, currentStatus, onClose }: Dail
 
   const watchedStatus = watch("status");
 
-  const pendingSubtasks = task?.suggestedSubtasks.filter((st) => st.status !== "DONE") ?? [];
-
-  const toggleSubtask = (id: string) => {
-    setCompletedSubtasks((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+  const handleResolveTask = async () => {
+    if (!taskId) return;
+    setLoading(true);
+    try {
+      await taskApi.update(taskId, {
+        status: "DONE",
+        updates: {
+          status: "DONE",
+          note: watch("note") || "Task marked as resolved.",
+        }
+      } as any);
+      toast({ title: "Success", description: "Task resolved successfully" });
+      reset();
+      onClose();
+      onSuccess();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to resolve task", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResolveTask = () => {
+  const onSubmit = async (data: FormData) => {
     if (!taskId) return;
-    const noteVal = watch("note") || "Task marked as resolved.";
-    addUpdate(taskId, {
-      status: "DONE",
-      note: noteVal,
-      subtaskCompletions: completedSubtasks.length > 0 ? completedSubtasks : undefined,
-    });
-    setCompletedSubtasks([]);
-    reset();
-    onClose();
-  };
-
-  const onSubmit = (data: FormData) => {
-    if (!taskId) return;
-    addUpdate(taskId, {
-      status: data.status,
-      note: data.note,
-      blockedReason: data.status === "BLOCKED" ? data.blockedReason : undefined,
-      subtaskCompletions: completedSubtasks.length > 0 ? completedSubtasks : undefined,
-    });
-    setCompletedSubtasks([]);
-    reset();
-    onClose();
+    setLoading(true);
+    try {
+      await taskApi.update(taskId, {
+        status: data.status,
+        updates: {
+          status: data.status,
+          note: data.note,
+          blockedReason: data.status === "BLOCKED" ? data.blockedReason : undefined,
+        }
+      } as any);
+      toast({ title: "Success", description: "Update added successfully" });
+      reset();
+      onClose();
+      onSuccess();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to add update", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { setCompletedSubtasks([]); reset(); onClose(); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Daily Update{task ? `: ${task.title}` : ""}</DialogTitle>
+          <DialogTitle>Daily Update</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div>
@@ -137,54 +147,21 @@ export function DailyUpdateDialog({ open, taskId, currentStatus, onClose }: Dail
             </div>
           )}
 
-          {/* Subtask completions */}
-          {pendingSubtasks.length > 0 && (
-            <>
-              <Separator />
-              <div>
-                <Label className="flex items-center gap-1.5 mb-2">
-                  <ListChecks className="h-4 w-4" /> Mark Subtasks Completed
-                </Label>
-                <div className="space-y-2">
-                  {pendingSubtasks.map((st) => (
-                    <label
-                      key={st.id}
-                      className="flex items-start gap-2 text-sm cursor-pointer rounded-md p-2 hover:bg-muted/50 transition-colors"
-                    >
-                      <Checkbox
-                        checked={completedSubtasks.includes(st.id)}
-                        onCheckedChange={() => toggleSubtask(st.id)}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <p className="font-medium">{st.title}</p>
-                        <p className="text-xs text-muted-foreground">{st.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          <Separator />
-
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button type="button" variant="outline" onClick={() => { setCompletedSubtasks([]); reset(); onClose(); }}>
+            <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }} disabled={loading}>
               Cancel
             </Button>
             <div className="flex gap-2">
-              <Button type="submit">Submit Update</Button>
-              {task?.status !== "DONE" && (
-                <Button
-                  type="button"
-                  variant="default"
-                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={handleResolveTask}
-                >
-                  <CheckCircle2 className="h-4 w-4" /> Resolve Task
-                </Button>
-              )}
+              <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Submit Update"}</Button>
+              <Button
+                type="button"
+                variant="default"
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleResolveTask}
+                disabled={loading}
+              >
+                <CheckCircle2 className="h-4 w-4" /> Resolve
+              </Button>
             </div>
           </DialogFooter>
         </form>
