@@ -7,6 +7,7 @@ export interface ITeam extends Document {
   members: string[];
 }
 
+
 const TeamSchema: Schema = new Schema(
   {
     name: { type: String, required: true },

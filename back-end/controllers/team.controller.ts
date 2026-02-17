@@ -12,6 +12,7 @@ export const createTeam = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    
     const team = new Team({
       name,
       description,

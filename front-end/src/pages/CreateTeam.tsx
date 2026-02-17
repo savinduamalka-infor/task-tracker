@@ -41,23 +41,31 @@ export default function CreateTeam() {
     setMembers(updatedMembers.length ? updatedMembers : [{ name: "", jobTitle: "" }]);
   };
 
-  const handleSubmit = () => {
-    if (!teamName.trim()) return;
+const handleSubmit = () => {
+  if (!teamName.trim()) return;
 
-    // Remove empty members
-    const validMembers = members.filter(
+  // Remove empty members
+  const validMembers = members
+    .filter(
       (member) => member.name.trim() && member.jobTitle.trim()
-    );
+    )
+    .map((member) => ({
+      id: Date.now().toString() + Math.random(),
+      name: member.name,
+      jobTitle: member.jobTitle,
+      role: "Member", // default role
+    }));
 
-    addTeam({
-      id: Date.now().toString(),
-      name: teamName,
-      description,
-      members: validMembers,
-    });
+  addTeam({
+    id: Date.now().toString(),
+    name: teamName,
+    description,
+    members: validMembers,
+  });
 
-    navigate("/");
-  };
+  navigate("/");
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
