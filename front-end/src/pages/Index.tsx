@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { LeadDashboard } from "@/components/dashboard/LeadDashboard";
 import { MemberDashboard } from "@/components/dashboard/MemberDashboard";
@@ -8,16 +8,46 @@ import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
+import { taskApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Table2 } from "lucide-react";
+import { Task } from "@/lib/types";
 
 const Index = () => {
-  const { tasks, currentRole } = useTaskStore();
+  const { currentRole } = useTaskStore();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [updateTaskId, setUpdateTaskId] = useState<string | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = () => {
+    taskApi.getAll()
+      .then(res => {
+        const mappedTasks = res.data.map((t: any) => ({
+          id: t._id,
+          title: t.title,
+          summary: t.summary || "",
+          description: t.description || "",
+          assigneeId: t.assigneeId,
+          status: t.status,
+          priority: t.priority,
+          startDate: t.startDate,
+          dueDate: t.dueDate,
+          reportedBy: t.reporterId,
+          createdAt: t.createdAt,
+          updates: t.updates || [],
+          suggestedSubtasks: [],
+        }));
+        setTasks(mappedTasks);
+      })
+      .catch(err => console.error("Failed to load tasks:", err));
+  };
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
 
@@ -36,7 +66,7 @@ const Index = () => {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {currentRole === "Lead" ? (
-          <LeadDashboard onCreateTask={() => setCreateOpen(true)} />
+          <LeadDashboard onCreateTask={() => setCreateOpen(true)} tasks={tasks} />
         ) : (
           <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} />
         )}
@@ -51,10 +81,10 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="board" className="mt-4">
-            <TaskBoard onTaskClick={openTaskDetail} />
+            <TaskBoard onTaskClick={openTaskDetail} tasks={tasks} />
           </TabsContent>
           <TabsContent value="table" className="mt-4">
-            <TaskTable onTaskClick={openTaskDetail} />
+            <TaskTable onTaskClick={openTaskDetail} tasks={tasks} />
           </TabsContent>
         </Tabs>
       </main>
@@ -68,7 +98,7 @@ const Index = () => {
           openUpdate(id);
         }}
       />
-      <CreateTaskDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateTaskDialog open={createOpen} onClose={() => { setCreateOpen(false); loadTasks(); }} />
       <DailyUpdateDialog
         open={updateOpen}
         taskId={updateTaskId}

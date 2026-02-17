@@ -9,19 +9,18 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useTaskStore } from "@/lib/task-store";
 import { TaskStatus, TaskPriority, Task } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { Search, ArrowUpDown, ListChecks } from "lucide-react";
 
 interface TaskTableProps {
   onTaskClick: (taskId: string) => void;
+  tasks: Task[];
 }
 
 type SortKey = "title" | "priority" | "dueDate" | "status";
 
-export function TaskTable({ onTaskClick }: TaskTableProps) {
-  const { tasks, getUserById } = useTaskStore();
+export function TaskTable({ onTaskClick, tasks }: TaskTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -106,10 +105,9 @@ export function TaskTable({ onTaskClick }: TaskTableProps) {
               </TableRow>
             ) : (
               filtered.map((task) => {
-                const assignee = getUserById(task.assigneeId);
-                const initials = assignee?.name.split(" ").map((n) => n[0]).join("") ?? "?";
-                const stDone = task.suggestedSubtasks.filter((s) => s.status === "DONE").length;
-                const stTotal = task.suggestedSubtasks.length;
+                const initials = "U";
+                const stDone = task.suggestedSubtasks?.filter((s) => s.status === "DONE").length || 0;
+                const stTotal = task.suggestedSubtasks?.length || 0;
                 return (
                   <TableRow key={task.id} className="cursor-pointer" onClick={() => onTaskClick(task.id)}>
                     <TableCell className="font-medium">
@@ -128,7 +126,6 @@ export function TaskTable({ onTaskClick }: TaskTableProps) {
                         <Avatar className="h-5 w-5">
                           <AvatarFallback className="text-[10px] bg-muted">{initials}</AvatarFallback>
                         </Avatar>
-                        <span className="text-sm">{assignee?.name}</span>
                       </div>
                     </TableCell>
                     <TableCell><StatusBadge status={task.status} /></TableCell>
