@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTaskStore } from "@/lib/task-store";
+import { taskApi, userApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { TaskPriority } from "@/lib/types";
+import { useTaskStore } from "@/lib/task-store";
 
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -40,7 +43,10 @@ interface CreateTaskDialogProps {
 }
 
 export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
-  const { addTask, users, currentUser } = useTaskStore();
+  const { toast } = useToast();
+  const { currentUser, currentRole } = useTaskStore();
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const {
     register,
     handleSubmit,
@@ -57,21 +63,56 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    addTask({
-      title: data.title,
-      summary: data.summary,
-      description: data.description ?? "",
-      assigneeId: data.assigneeId,
-      status: "TODO",
-      priority: data.priority as TaskPriority,
-      startDate: data.startDate,
-      dueDate: data.dueDate,
-      reportedBy: currentUser.id,
-      suggestedSubtasks: [],
-    });
-    reset();
-    onClose();
+  useEffect(() => {
+    if (open) {
+      const userRole = currentUser.role || "Member";
+      
+      if (userRole === "Member") {
+        setUsers([{ _id: currentUser.id, name: "Assign to me" }]);
+        setValue("assigneeId", currentUser.id);
+      } else {
+        userApi.getAll()
+          .then(res => setUsers(res.data))
+          .catch(err => {
+            console.error("Failed to load users:", err);
+            toast({
+              title: "Error",
+              description: "Failed to load users",
+              variant: "destructive",
+            });
+          });
+      }
+    }
+  }, [open, currentUser.role, currentUser.id, setValue, toast]);
+
+  const onSubmit = async (data: FormData) => {
+    setLoading(true);
+    try {
+      await taskApi.create({
+        title: data.title,
+        summary: data.summary,
+        description: data.description ?? "",
+        assigneeId: data.assigneeId,
+        priority: data.priority as TaskPriority,
+        startDate: data.startDate,
+        dueDate: data.dueDate,
+        teamId: "000000000000000000000000", // Temporary until team module is ready
+      });
+      toast({
+        title: "Success",
+        description: "Task created successfully",
+      });
+      reset();
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to create task",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -99,10 +140,10 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
             <div>
               <Label>Assignee</Label>
               <Select onValueChange={(v) => setValue("assigneeId", v)} value={watch("assigneeId")}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
                 <SelectContent>
                   {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                    <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -133,7 +174,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }}>Cancel</Button>
-            <Button type="submit">Create Task</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create Task"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
