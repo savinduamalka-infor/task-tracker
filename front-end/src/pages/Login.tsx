@@ -2,7 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
@@ -35,16 +37,42 @@ export default function Login() {
     },
   });
 
-  const onSubmit = (data: LoginFormData) => {
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/sign-in/email`,
+        {
+          email: data.email,
+          password: data.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data) {
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${data.email}!`,
+        });
+        navigate("/");
+      }
+    } catch (error) {
+      const errorMessage =
+        axios.isAxiosError(error) && error.response?.data?.message
+          ? error.response.data.message
+          : "Failed to log in. Please check your credentials.";
+      
       toast({
-        title: "Login Submitted",
-        description: `Logged in with ${data.email}`,
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
       });
-    }, 1000);
+      setIsLoading(false);
+    }
   };
 
   return (
