@@ -37,3 +37,35 @@ export async function getTaskById(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to get task" });
   }
 }
+
+export async function updateTask(req: Request, res: Response) {
+  try {
+    const task = await TaskModel.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+    res.json(task);
+  } catch (error) {
+    console.error("Update task error:", error);
+    res.status(500).json({ error: "Failed to update task" });
+  }
+}
+
+export async function deleteTask(req: Request, res: Response) {
+  try {
+    const task = await TaskModel.findByIdAndDelete(req.params.id);
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+    res.json({ message: "Task deleted successfully" });
+  } catch (error) {
+    console.error("Delete task error:", error);
+    res.status(500).json({ error: "Failed to delete task" });
+  }
+}
