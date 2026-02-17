@@ -38,7 +38,7 @@ const updateSchema = new Schema<IUpdate>(
     blockedReason: { type: String, trim: true },
     updatedBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
   },
@@ -57,7 +57,7 @@ const taskSchema = new Schema<ITask>(
     description: { type: String, trim: true },
     assigneeId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
     status: {
@@ -74,12 +74,12 @@ const taskSchema = new Schema<ITask>(
     dueDate: { type: Date },
     reporterId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
     restrictTo: {
       type: [Schema.Types.ObjectId],
-      ref: "User",
+      ref: "user",
       default: [],
     },
     teamId: {
@@ -94,7 +94,8 @@ const taskSchema = new Schema<ITask>(
     },
   },
   {
-    timestamps: true, 
+    timestamps: true,
+  }
 );
 
 // Basic useful indexes
