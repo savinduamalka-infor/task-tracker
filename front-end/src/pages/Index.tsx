@@ -8,14 +8,15 @@ import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
-import { taskApi } from "@/lib/api";
+import { taskApi, userApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Table2 } from "lucide-react";
-import { Task } from "@/lib/types";
+import { Task, User } from "@/lib/types";
 
 const Index = () => {
   const { currentRole } = useTaskStore();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -24,7 +25,14 @@ const Index = () => {
 
   useEffect(() => {
     loadTasks();
+    loadUsers();
   }, []);
+
+  const loadUsers = () => {
+    userApi.getAll()
+      .then(res => setUsers(res.data))
+      .catch(err => console.error("Failed to load users:", err));
+  };
 
   const loadTasks = () => {
     taskApi.getAll()
@@ -81,7 +89,7 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="board" className="mt-4">
-            <TaskBoard onTaskClick={openTaskDetail} tasks={tasks} />
+            <TaskBoard onTaskClick={openTaskDetail} tasks={tasks} users={users} />
           </TabsContent>
           <TabsContent value="table" className="mt-4">
             <TaskTable onTaskClick={openTaskDetail} tasks={tasks} />
@@ -97,6 +105,7 @@ const Index = () => {
           setSheetOpen(false);
           openUpdate(id);
         }}
+        users={users}
       />
       <CreateTaskDialog open={createOpen} onClose={() => { setCreateOpen(false); loadTasks(); }} />
       <DailyUpdateDialog
