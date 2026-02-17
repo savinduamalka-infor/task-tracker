@@ -2,18 +2,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PriorityBadge } from "@/components/StatusBadge";
 import { CalendarDays, ListChecks } from "lucide-react";
-import { Task } from "@/lib/types";
-import { useTaskStore } from "@/lib/task-store";
+import { Task, User } from "@/lib/types";
 import { format, parseISO, isPast, isToday } from "date-fns";
 
 interface TaskCardProps {
   task: Task;
   onClick: () => void;
+  users: User[];
 }
 
-export function TaskCard({ task, onClick }: TaskCardProps) {
-  const { getUserById } = useTaskStore();
-  const assignee = getUserById(task.assigneeId);
+export function TaskCard({ task, onClick, users }: TaskCardProps) {
+  const assignee = users.find(u => u._id === task.assigneeId);
   const initials = assignee?.name.split(" ").map((n) => n[0]).join("") ?? "?";
   const due = parseISO(task.dueDate);
   const overdue = isPast(due) && task.status !== "DONE" && !isToday(due);
