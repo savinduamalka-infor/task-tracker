@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import type { Db, MongoClient } from "mongodb";
@@ -13,10 +12,6 @@ function buildAuth(db: Db, client?: MongoClient) {
     }),
 
     advanced: {
-      database: {
-        generateId: () => crypto.randomUUID(),
-      },
-      disableOriginCheck: true,
       disableCSRFCheck: true,
     },
 
