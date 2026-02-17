@@ -8,6 +8,8 @@ interface TaskStore {
   currentUser: User;
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
+  setCurrentUser: (user: User) => void;
+  logout: () => void;
   addTask: (task: Omit<Task, "id" | "createdAt" | "updates">) => void;
   addUpdate: (taskId: string, update: Omit<TaskUpdate, "date" | "updatedBy">) => void;
   addSuggestedSubtasks: (taskId: string, subtasks: Omit<SuggestedSubtask, "id" | "status">[]) => void;
@@ -18,11 +20,25 @@ interface TaskStore {
 
 const TaskStoreContext = createContext<TaskStore | null>(null);
 
+const DEFAULT_USER: User = {
+  id: "",
+  email: "",
+  name: "",
+  role: "Member",
+  teamId: "",
+  jobTitle: "",
+  isActive: false,
+  lastUpdateSubmitted: null,
+};
+
 export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [currentRole, setCurrentRole] = useState<UserRole>("Lead");
+  const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
 
-  const currentUser = currentRole === "Lead" ? mockUsers[0] : mockUsers[1];
+  const logout = useCallback(() => {
+    setCurrentUser(DEFAULT_USER);
+  }, []);
 
   const addTask = useCallback((taskData: Omit<Task, "id" | "createdAt" | "updates">) => {
     const newTask: Task = {
@@ -43,7 +59,6 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
           date: new Date().toISOString().split("T")[0],
           updatedBy: currentUser.id,
         };
-        // Mark completed subtasks
         const updatedSubtasks = task.suggestedSubtasks.map((st) =>
           update.subtaskCompletions?.includes(st.id)
             ? { ...st, status: "DONE" as TaskStatus }
@@ -99,6 +114,8 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         currentRole,
         setCurrentRole,
+        setCurrentUser,
+        logout,
         addTask,
         addUpdate,
         addSuggestedSubtasks,

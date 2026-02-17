@@ -1,5 +1,7 @@
 import { Moon, Sun, ChevronDown, LogOut, ClipboardList } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,15 +14,42 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTaskStore } from "@/lib/task-store";
+import { useToast } from "@/hooks/use-toast";
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
-  const { currentUser, currentRole, setCurrentRole } = useTaskStore();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { currentUser, currentRole, setCurrentRole, logout } = useTaskStore();
 
   const initials = currentUser.name
     .split(" ")
     .map((n) => n[0])
     .join("");
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/sign-out`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Logout API error:", error);
+    }
+    logout();
+    
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    
+    navigate("/login");
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -92,7 +121,7 @@ export function Navbar() {
               <DropdownMenuItem className="sm:hidden" onClick={() => setCurrentRole(currentRole === "Lead" ? "Member" : "Lead")}>
                 Switch to {currentRole === "Lead" ? "Member" : "Lead"} View
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>
