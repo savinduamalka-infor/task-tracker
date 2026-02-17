@@ -60,25 +60,26 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Role Switcher */}
-          <div className="hidden sm:flex items-center gap-1 mr-2 border rounded-lg p-0.5">
-            <Button
-              variant={currentRole === "Lead" ? "default" : "ghost"}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setCurrentRole("Lead")}
-            >
-              Lead
-            </Button>
-            <Button
-              variant={currentRole === "Member" ? "default" : "ghost"}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setCurrentRole("Member")}
-            >
-              Member
-            </Button>
-          </div>
+          {currentUser.role !== "Member" && (
+            <div className="hidden sm:flex items-center gap-1 mr-2 border rounded-lg p-0.5">
+              <Button
+                variant={currentRole === "Lead" ? "default" : "ghost"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setCurrentRole("Lead")}
+              >
+                Lead
+              </Button>
+              <Button
+                variant={currentRole === "Member" ? "default" : "ghost"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setCurrentRole("Member")}
+              >
+                Member
+              </Button>
+            </div>
+          )}
 
           {/* Theme Toggle */}
           <Button
@@ -118,9 +119,11 @@ export function Navbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="sm:hidden" onClick={() => setCurrentRole(currentRole === "Lead" ? "Member" : "Lead")}>
-                Switch to {currentRole === "Lead" ? "Member" : "Lead"} View
-              </DropdownMenuItem>
+              {currentUser.role !== "Member" && (
+                <DropdownMenuItem className="sm:hidden" onClick={() => setCurrentRole(currentRole === "Lead" ? "Member" : "Lead")}>
+                  Switch to {currentRole === "Lead" ? "Member" : "Lead"} View
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
