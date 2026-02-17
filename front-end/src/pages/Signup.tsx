@@ -63,6 +63,7 @@ export default function Signup() {
           headers: {
             "Content-Type": "application/json",
           },
+          withCredentials: true,
         }
       );
 
