@@ -74,9 +74,11 @@ export function MemberDashboard({ onQuickUpdate, onTaskClick }: MemberDashboardP
                       {urgent && !overdue && <Badge className="bg-amber-500 text-white text-xs">Due Soon</Badge>}
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onQuickUpdate(task.id); }}>
-                    <MessageSquarePlus className="h-4 w-4 mr-1" /> Update
-                  </Button>
+                  {task.assigneeId === currentUser.id && (
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onQuickUpdate(task.id); }}>
+                      <MessageSquarePlus className="h-4 w-4 mr-1" /> Update
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );

@@ -25,7 +25,7 @@ interface TaskDetailSheetProps {
 }
 
 export function TaskDetailSheet({ task, open, onClose, onAddUpdate }: TaskDetailSheetProps) {
-  const { getUserById } = useTaskStore();
+  const { getUserById, currentUser } = useTaskStore();
   const [suggesting, setSuggesting] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]);
 
@@ -114,9 +114,11 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate }: TaskDetail
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" onClick={() => onAddUpdate(task.id)}>
-              <MessageSquarePlus className="mr-1.5 h-4 w-4" /> Add Update
-            </Button>
+            {task.assigneeId === currentUser.id && (
+              <Button size="sm" onClick={() => onAddUpdate(task.id)}>
+                <MessageSquarePlus className="mr-1.5 h-4 w-4" /> Add Update
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
