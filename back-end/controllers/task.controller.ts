@@ -23,3 +23,17 @@ export async function getAllTasks(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to get tasks" });
   }
 }
+
+export async function getTaskById(req: Request, res: Response) {
+  try {
+    const task = await TaskModel.findById(req.params.id);
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+    res.json(task);
+  } catch (error) {
+    console.error("Get task error:", error);
+    res.status(500).json({ error: "Failed to get task" });
+  }
+}
