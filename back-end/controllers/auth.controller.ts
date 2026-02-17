@@ -23,3 +23,17 @@ export async function getSession(req: Request, res: Response) {
     res.status(500).json({ error: "session_lookup_failed" });
   }
 }
+
+export async function signOut(req: Request, res: Response) {
+  try {
+    const auth = getAuth();
+    await auth.api.signOut({
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    res.status(200).json({ success: true, message: "Signed out successfully" });
+  } catch (err) {
+    console.error("/api/auth/sign-out error", err);
+    res.status(500).json({ error: "sign_out_failed" });
+  }
+}
