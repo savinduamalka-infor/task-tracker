@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useTaskStore } from "@/lib/task-store";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -27,6 +28,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { setCurrentUser } = useTaskStore();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
@@ -53,10 +55,24 @@ export default function Login() {
         }
       );
 
-      if (response.data) {
+      if (response.data?.user) {
+        const userData = {
+          id: response.data.user._id || response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: response.data.user.role,
+          teamId: response.data.user.teamId || "",
+          jobTitle: response.data.user.jobTitle || "",
+          isActive: response.data.user.isActive,
+          lastUpdateSubmitted: response.data.user.lastUpdateSubmitted || null,
+          avatar: response.data.user.image,
+        };
+        
+        setCurrentUser(userData);
+        
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${data.email}!`,
+          description: `Welcome back, ${response.data.user.name}!`,
         });
         navigate("/");
       }
