@@ -4,7 +4,7 @@ export interface ITeam extends Document {
   name: string;
   description?: string;
   createdBy: string;
-  members: string;
+  members: string[];
 }
 
 const TeamSchema: Schema = new Schema(

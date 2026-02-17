@@ -27,9 +27,9 @@ export default function CreateTeam() {
     field: keyof MemberInput,
     value: string
   ) => {
-    const updated = [...members];
-    updated[index][field] = value;
-    setMembers(updated);
+    const updatedMembers = [...members];
+    updatedMembers[index][field] = value;
+    setMembers(updatedMembers);
   };
 
   const addMemberField = () => {
@@ -37,20 +37,24 @@ export default function CreateTeam() {
   };
 
   const removeMemberField = (index: number) => {
-    const updated = members.filter((_, i) => i !== index);
-    setMembers(updated);
+    const updatedMembers = members.filter((_, i) => i !== index);
+    setMembers(updatedMembers.length ? updatedMembers : [{ name: "", jobTitle: "" }]);
   };
 
   const handleSubmit = () => {
     if (!teamName.trim()) return;
 
+    // Remove empty members
+    const validMembers = members.filter(
+      (member) => member.name.trim() && member.jobTitle.trim()
+    );
+
     addTeam({
       id: Date.now().toString(),
       name: teamName,
       description,
+      members: validMembers,
     });
-
-    console.log("Members:", members);
 
     navigate("/");
   };
@@ -79,7 +83,7 @@ export default function CreateTeam() {
               onChange={(e) => setDescription(e.target.value)}
             />
 
-            {/* Add Team Member Button */}
+            {/* Show Members Button */}
             {!showMembers && (
               <Button
                 type="button"
@@ -91,13 +95,15 @@ export default function CreateTeam() {
               </Button>
             )}
 
-            {/* Members Section (Hidden Until Clicked) */}
+            {/* Members Section */}
             {showMembers && (
-              <div className="space-y-3">
+              <div className="space-y-4">
+
                 <h3 className="text-sm font-medium">Team Members</h3>
 
                 {members.map((member, index) => (
                   <div key={index} className="flex gap-2 items-center">
+
                     <Input
                       placeholder="Member Name"
                       value={member.name}
@@ -118,6 +124,7 @@ export default function CreateTeam() {
                       <Button
                         type="button"
                         variant="destructive"
+                        size="icon"
                         onClick={() => removeMemberField(index)}
                       >
                         ✕
@@ -134,10 +141,11 @@ export default function CreateTeam() {
                 >
                   + Add Another Member
                 </Button>
+
               </div>
             )}
 
-            {/* Create Button */}
+            {/* Submit Button */}
             <Button onClick={handleSubmit} className="w-full">
               Create Team
             </Button>
