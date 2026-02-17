@@ -103,6 +103,7 @@ const Index = () => {
         open={updateOpen}
         taskId={updateTaskId}
         onClose={() => setUpdateOpen(false)}
+        onSuccess={loadTasks}
       />
     </div>
   );
