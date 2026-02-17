@@ -3,6 +3,7 @@ import { protectedRoute, adminOnly } from "../middleware/auth.middleware.js";
 import { getAdminDashboard, getMe, getAllUsers } from "../controllers/user.controller.js";
 import { getSession, signOut } from "../controllers/auth.controller.js";
 import { createTask, getAllTasks, getTaskById, updateTask, deleteTask } from "../controllers/task.controller.js";
+import { suggestSubtasks } from "../controllers/subtask.controller.js";
 
 const router = Router();
 
@@ -17,5 +18,7 @@ router.get("/api/tasks", protectedRoute, getAllTasks);
 router.get("/api/tasks/:id", protectedRoute, getTaskById);
 router.put("/api/tasks/:id", protectedRoute, updateTask);
 router.delete("/api/tasks/:id", protectedRoute, deleteTask);
+
+router.post("/api/subtasks/suggest", protectedRoute, suggestSubtasks);
 
 export default router;
