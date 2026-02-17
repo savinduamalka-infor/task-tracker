@@ -40,11 +40,26 @@ export async function getTaskById(req: Request, res: Response) {
 
 export async function updateTask(req: Request, res: Response) {
   try {
-    const task = await TaskModel.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const { updates, ...updateData } = req.body;
+    
+    let task;
+    if (updates) {
+      task = await TaskModel.findByIdAndUpdate(
+        req.params.id,
+        { 
+          $push: { updates: { ...updates, updatedBy: req.user!.id, date: new Date() } },
+          ...updateData
+        },
+        { new: true, runValidators: true }
+      );
+    } else {
+      task = await TaskModel.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true, runValidators: true }
+      );
+    }
+    
     if (!task) {
       res.status(404).json({ error: "Task not found" });
       return;
