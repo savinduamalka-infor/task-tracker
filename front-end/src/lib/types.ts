@@ -49,3 +49,17 @@ export interface Task {
   updates: TaskUpdate[];
   suggestedSubtasks: SuggestedSubtask[];
 }
+
+export interface TeamMember{
+  id: string;
+  name: string;
+  role: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description: string;
+  members?: TeamMember[];
+}
+

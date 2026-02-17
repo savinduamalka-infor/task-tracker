@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { Task, TaskUpdate, TaskStatus, TaskPriority, User, UserRole, SuggestedSubtask } from "./types";
+import { Task, TaskUpdate, TaskStatus, TaskPriority, User, UserRole, SuggestedSubtask, Team } from "./types";
 import { mockTasks, mockUsers } from "./mock-data";
 
 interface TaskStore {
   tasks: Task[];
+  teams: Team[];
   users: User[];
   currentUser: User;
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
-  setCurrentUser: (user: User) => void;
-  logout: () => void;
+  addTeam: (team: Team) => void;
   addTask: (task: Omit<Task, "id" | "createdAt" | "updates">) => void;
   addUpdate: (taskId: string, update: Omit<TaskUpdate, "date" | "updatedBy">) => void;
   addSuggestedSubtasks: (taskId: string, subtasks: Omit<SuggestedSubtask, "id" | "status">[]) => void;
@@ -33,8 +33,9 @@ const DEFAULT_USER: User = {
 
 export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [currentUser, setCurrentUser] = useState<User>(DEFAULT_USER);
   const [currentRole, setCurrentRole] = useState<UserRole>("Lead");
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
 
   const logout = useCallback(() => {
     setCurrentUser(DEFAULT_USER);
@@ -49,6 +50,11 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
     };
     setTasks((prev) => [...prev, newTask]);
   }, []);
+
+  const addTeam = (team: Team) => {
+  setTeams((prev) => [...prev, team]);
+};
+
 
   const addUpdate = useCallback((taskId: string, update: Omit<TaskUpdate, "date" | "updatedBy">) => {
     setTasks((prev) =>
@@ -110,6 +116,7 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
     <TaskStoreContext.Provider
       value={{
         tasks,
+        teams,
         users: mockUsers,
         currentUser,
         currentRole,
@@ -117,6 +124,7 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
         setCurrentUser,
         logout,
         addTask,
+        addTeam,
         addUpdate,
         addSuggestedSubtasks,
         getTasksByStatus,

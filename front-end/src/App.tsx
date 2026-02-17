@@ -11,7 +11,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-
+import CreateTeam from "./pages/CreateTeam";
+import TeamMembers from "./pages/TeamMembers";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -27,6 +28,8 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="*" element={<NotFound />} />
+              <Route path="/create-team" element={<CreateTeam />} />
+              <Route path="/team-members" element={<ProtectedRoute><TeamMembers /></ProtectedRoute>} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

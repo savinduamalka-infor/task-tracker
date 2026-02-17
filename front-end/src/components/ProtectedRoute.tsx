@@ -9,9 +9,9 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { currentUser } = useTaskStore();
 
-  if (!currentUser.id) {
-    return <Navigate to="/login" replace />;
-  }
+  // if (!currentUser.id) {
+  //   return <Navigate to="/login" replace />;
+  // }
 
   return <>{children}</>;
 }

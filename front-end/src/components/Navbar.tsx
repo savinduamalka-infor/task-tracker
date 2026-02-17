@@ -1,6 +1,7 @@
 import { Moon, Sun, ChevronDown, LogOut, ClipboardList } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
+import { Users } from "lucide-react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,12 +43,12 @@ export function Navbar() {
       console.error("Logout API error:", error);
     }
     logout();
-    
+
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-    
+
     navigate("/login");
   };
 
@@ -79,6 +80,18 @@ export function Navbar() {
               Member
             </Button>
           </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/team-members")}
+            className="hidden sm:flex items-center gap-1"
+          >
+            <Users className="h-4 w-4" />
+            Team 
+          </Button>
+
+
 
           {/* Theme Toggle */}
           <Button

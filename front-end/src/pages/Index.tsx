@@ -11,8 +11,11 @@ import { useTaskStore } from "@/lib/task-store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Table2 } from "lucide-react";
 
+
+
 const Index = () => {
   const { tasks, currentRole } = useTaskStore();
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -36,10 +39,12 @@ const Index = () => {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {currentRole === "Lead" ? (
-          <LeadDashboard onCreateTask={() => setCreateOpen(true)} />
+          <LeadDashboard 
+          onCreateTask={() => setCreateOpen(true)} 
+          />
         ) : (
           <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} />
-        )}
+        )}$
 
         <Tabs defaultValue="board">
           <TabsList>
@@ -69,6 +74,7 @@ const Index = () => {
         }}
       />
       <CreateTaskDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+
       <DailyUpdateDialog
         open={updateOpen}
         taskId={updateTaskId}
