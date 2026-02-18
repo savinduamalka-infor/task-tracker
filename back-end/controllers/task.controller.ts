@@ -3,9 +3,17 @@ import { TaskModel } from "../models/task.model.js";
 
 export async function createTask(req: Request, res: Response) {
   try {
+    const user = req.user!;
+
+    if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
+      res.status(403).json({ error: "Members can only assign tasks to themselves" });
+      return;
+    }
+
     const task = await TaskModel.create({
       ...req.body,
-      reporterId: req.user!.id,
+      assigneeId: user.role === "Member" ? user.id : req.body.assigneeId,
+      reporterId: user.id,
     });
     res.status(201).json(task);
   } catch (error) {
