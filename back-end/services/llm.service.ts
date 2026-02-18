@@ -197,3 +197,77 @@ Rules:
     throw new Error("Failed to generate AI summary");
   }
 }
+
+export async function generateTaskProgress(
+  mainTask: { title: string; description: string; status: string; priority: string },
+  subtasks: Array<{ title: string; status: string; description?: string }>,
+  updates: Array<{ date: string; note: string; updatedBy: string; userName?: string }>
+): Promise<string> {
+  try {
+    const subtaskSummary = subtasks.length > 0
+      ? subtasks.map((st, i) => `${i + 1}. ${st.title} - Status: ${st.status}`).join("\n")
+      : "No subtasks";
+
+    const recentUpdates = updates.slice(-5).map((u) => 
+      `- ${u.date}: ${u.note} (by ${u.userName || "Unknown"})`
+    ).join("\n");
+
+    const response = await axios.post(
+      LLM_API_URL,
+      {
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content: `You are a project progress analyst. Based ONLY on the provided data, generate a factual progress report. Structure:
+
+## Overall Status Summary
+[2-3 sentences based on current status, priority, and recent updates]
+
+## Completed Work
+[List only subtasks with DONE status. If none, state "None"]
+
+## In Progress
+[List activities from recent updates and subtasks with IN_PROGRESS status. If none, state "None"]
+
+## Blockers/Risks
+[List only if status is BLOCKED or updates mention blockers. If none, state "None"]
+
+## Next Steps
+[Based on TODO subtasks and current progress. If unclear, state "Pending team input"]
+
+IMPORTANT: Do not invent information. Use only the provided data. If data is missing, acknowledge it.`
+          },
+          {
+            role: "user",
+            content: `Main Task: ${mainTask.title}
+Description: ${mainTask.description || "No description provided"}
+Status: ${mainTask.status}
+Priority: ${mainTask.priority}
+
+Subtasks:
+${subtaskSummary}
+
+Recent Updates:
+${recentUpdates || "No updates submitted"}
+
+Generate a factual progress report based ONLY on this data.`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 800
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.LLM_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    return response.data.choices[0].message.content || "Unable to generate progress report.";
+  } catch (error) {
+    console.error("LLM progress generation error:", error);
+    throw new Error("Failed to generate progress report");
+  }
+}
