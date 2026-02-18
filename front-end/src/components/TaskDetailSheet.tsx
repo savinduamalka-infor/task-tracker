@@ -10,10 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2, Trash2,
+  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2, Trash2, FileText,
 } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
-import { subtaskApi, taskApi } from "@/lib/api";
+import { subtaskApi, taskApi, progressApi } from "@/lib/api";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { format, parseISO } from "date-fns";
 import { Task, TaskStatus, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +39,9 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
   const [suggesting, setSuggesting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deletingSubtaskId, setDeletingSubtaskId] = useState<string | null>(null);
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressReport, setProgressReport] = useState<string | null>(null);
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [selectedSubtaskIndices, setSelectedSubtaskIndices] = useState<Set<number>>(new Set());
   const [addingSubtasks, setAddingSubtasks] = useState(false);
@@ -130,6 +136,51 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
         variant: "destructive",
       });
     }
+  };
+
+  const handleGenerateProgress = async () => {
+    if (!task) return;
+    setProgressLoading(true);
+    setProgressReport(null);
+    setProgressDialogOpen(true);
+    try {
+      const res = await progressApi.getTaskProgress(task.id);
+      setProgressReport(res.data.progress);
+    } catch (error) {
+      console.error("Failed to generate progress:", error);
+      toast({ title: "Error", description: "Failed to generate progress report", variant: "destructive" });
+      setProgressDialogOpen(false);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
+  const renderMarkdown = (md: string) => {
+    const lines = md.split("\n");
+    const html: string[] = [];
+    let inList = false;
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) {
+        if (inList) { html.push("</ul>"); inList = false; }
+        html.push("<br/>");
+        continue;
+      }
+      if (line.startsWith("## ")) {
+        if (inList) { html.push("</ul>"); inList = false; }
+        html.push(`<h3 class="text-sm font-semibold mt-3 mb-1">${line.slice(3)}</h3>`);
+        continue;
+      }
+      if (/^[-*•]\s/.test(line)) {
+        if (!inList) { html.push('<ul class="list-disc list-inside space-y-0.5 text-muted-foreground">'); inList = true; }
+        html.push(`<li>${line.replace(/^[-*•]\s*/, "")}</li>`);
+        continue;
+      }
+      if (inList) { html.push("</ul>"); inList = false; }
+      html.push(`<p class="text-muted-foreground">${line}</p>`);
+    }
+    if (inList) html.push("</ul>");
+    return html.join("\n");
   };
 
   const handleDeleteTask = async () => {
@@ -251,6 +302,16 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
             >
               <Sparkles className="h-4 w-4" />
               {suggesting ? "Suggesting..." : "Suggest Subtasks"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleGenerateProgress}
+              disabled={progressLoading}
+              className="gap-1.5"
+            >
+              <FileText className="h-4 w-4" />
+              {progressLoading ? "Generating..." : "Progress Report"}
             </Button>
             <Button
               size="icon"
@@ -464,6 +525,32 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
           </div>
         </div>
       </SheetContent>
+
+      <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Task Progress Report
+            </DialogTitle>
+          </DialogHeader>
+          {progressLoading ? (
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-2/4" />
+            </div>
+          ) : progressReport ? (
+            <div className="prose prose-sm max-w-none py-2">
+              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(progressReport) }} />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-4">No progress report available.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
