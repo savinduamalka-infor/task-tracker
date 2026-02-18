@@ -134,8 +134,13 @@ const Index = () => {
         onSubtaskAdded={loadTasks}
         onTaskClick={(id) => {
           setSelectedTaskId(id);
+          setSheetOpen(true);
         }}
         allTasks={tasks}
+        onDeleteTask={() => {
+          setSheetOpen(false);
+          loadTasks();
+        }}
       />
       <CreateTaskDialog open={createOpen} onClose={() => { setCreateOpen(false); loadTasks(); }} />
       <DailyUpdateDialog

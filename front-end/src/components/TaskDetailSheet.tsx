@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2,
+  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2, Trash2,
 } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
-import { subtaskApi } from "@/lib/api";
+import { subtaskApi, taskApi } from "@/lib/api";
 import { format, parseISO } from "date-fns";
 import { Task, TaskStatus, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -27,12 +27,15 @@ interface TaskDetailSheetProps {
   onSubtaskAdded?: () => void;
   onTaskClick?: (taskId: string) => void;
   allTasks?: Task[];
+  onDeleteTask?: (taskId: string) => void;
 }
 
-export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSubtaskAdded, onTaskClick, allTasks = [] }: TaskDetailSheetProps) {
+export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSubtaskAdded, onTaskClick, allTasks = [], onDeleteTask }: TaskDetailSheetProps) {
   const { currentUser } = useTaskStore();
   const { toast } = useToast();
   const [suggesting, setSuggesting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingSubtaskId, setDeletingSubtaskId] = useState<string | null>(null);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [selectedSubtaskIndices, setSelectedSubtaskIndices] = useState<Set<number>>(new Set());
   const [addingSubtasks, setAddingSubtasks] = useState(false);
@@ -129,6 +132,36 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
     }
   };
 
+  const handleDeleteTask = async () => {
+    setDeleting(true);
+    try {
+      await taskApi.delete(task.id);
+      toast({ title: "Deleted", description: `"${task.title}" has been removed.` });
+      onClose();
+      onDeleteTask?.(task.id);
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      toast({ title: "Error", description: "Failed to delete task", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingSubtaskId(subtaskId);
+    try {
+      await taskApi.delete(subtaskId);
+      toast({ title: "Subtask Removed", description: "Subtask has been removed." });
+      onSubtaskAdded?.();
+    } catch (error) {
+      console.error("Failed to delete subtask:", error);
+      toast({ title: "Error", description: "Failed to remove subtask", variant: "destructive" });
+    } finally {
+      setDeletingSubtaskId(null);
+    }
+  };
+
   const existingSubtasks = allTasks.filter((t) => t.parentTaskId === task.id);
 
   const parentTask = task.isSubtask && task.parentTaskId
@@ -218,6 +251,20 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
             >
               <Sparkles className="h-4 w-4" />
               {suggesting ? "Suggesting..." : "Suggest Subtasks"}
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handleDeleteTask}
+              disabled={deleting}
+              className="h-8 w-8 ml-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              title="Delete task"
+            >
+              {deleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
             </Button>
           </div>
 
@@ -316,23 +363,39 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                 </h4>
                 <div className="space-y-1.5">
                   {existingSubtasks.map((st) => (
-                    <button
+                    <div
                       key={st.id}
-                      onClick={() => onTaskClick?.(st.id)}
-                      className="flex items-center gap-2 text-sm rounded-md p-2 bg-muted/30 w-full text-left hover:bg-muted/50 transition-colors"
+                      className="flex items-center gap-2 text-sm rounded-md p-2 bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      {st.status === "DONE" ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      ) : (
-                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className={st.status === "DONE" ? "line-through text-muted-foreground" : "font-medium"}>
-                          {st.title}
-                        </p>
-                      </div>
-                      <StatusBadge status={st.status} />
-                    </button>
+                      <button
+                        onClick={() => onTaskClick?.(st.id)}
+                        className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                      >
+                        {st.status === "DONE" ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className={st.status === "DONE" ? "line-through text-muted-foreground" : "font-medium"}>
+                            {st.title}
+                          </p>
+                        </div>
+                        <StatusBadge status={st.status} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteSubtask(st.id, e)}
+                        disabled={deletingSubtaskId === st.id}
+                        className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Remove subtask"
+                      >
+                        {deletingSubtaskId === st.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
