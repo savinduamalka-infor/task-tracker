@@ -48,7 +48,6 @@ export interface DailySummaryTask {
   assigneeName: string;
   updates: Array<{
     note: string;
-    status: string;
     blockedReason?: string;
   }>;
 }
@@ -60,7 +59,7 @@ export async function generateDailySummary(
   try {
     const taskLines = tasks.map((t, i) => {
       const updateNotes = t.updates.length
-        ? t.updates.map((u) => `  - [${u.status}] ${u.note}${u.blockedReason ? ` (Blocked: ${u.blockedReason})` : ""}`).join("\n")
+        ? t.updates.map((u) => `  - ${u.note}${u.blockedReason ? ` (Blocked: ${u.blockedReason})` : ""}`).join("\n")
         : "  - No updates submitted today";
       return `${i + 1}. "${t.title}" (Priority: ${t.priority}, Assignee: ${t.assigneeName}, Current Status: ${t.status})\n${updateNotes}`;
     }).join("\n\n");

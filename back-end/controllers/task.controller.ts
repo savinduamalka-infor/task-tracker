@@ -57,10 +57,23 @@ export async function updateTask(req: Request, res: Response) {
     
     let task;
     if (updates) {
+      if (!updates.note || typeof updates.note !== "string" || !updates.note.trim()) {
+        res.status(400).json({ error: "Update note is required" });
+        return;
+      }
+
+      const normalizedUpdate = {
+        note: updates.note.trim(),
+        blockedReason: updates.blockedReason,
+        subtaskCompletions: updates.subtaskCompletions,
+        updatedBy: req.user!.id,
+        date: new Date(),
+      };
+
       task = await TaskModel.findByIdAndUpdate(
         req.params.id,
         { 
-          $push: { updates: { ...updates, updatedBy: req.user!.id, date: new Date() } },
+          $push: { updates: normalizedUpdate },
           ...updateData
         },
         { new: true, runValidators: true }

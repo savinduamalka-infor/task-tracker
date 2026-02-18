@@ -28,7 +28,6 @@ export interface SuggestedSubtask {
 export interface TaskUpdate {
   date: string;
   note: string;
-  status: TaskStatus;
   blockedReason?: string;
   updatedBy: string;
   subtaskCompletions?: string[]; // IDs of suggested subtasks completed in this update
