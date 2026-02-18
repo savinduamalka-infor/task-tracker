@@ -4,6 +4,7 @@ import { getAdminDashboard, getMe, getAllUsers } from "../controllers/user.contr
 import { getSession, signOut } from "../controllers/auth.controller.js";
 import { createTask, getAllTasks, getTaskById, updateTask, deleteTask } from "../controllers/task.controller.js";
 import { suggestSubtasks } from "../controllers/subtask.controller.js";
+import { getDailySummary } from "../controllers/summary.controller.js";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.put("/api/tasks/:id", protectedRoute, updateTask);
 router.delete("/api/tasks/:id", protectedRoute, deleteTask);
 
 router.post("/api/subtasks/suggest", protectedRoute, suggestSubtasks);
+router.get("/api/summary/daily", protectedRoute, getDailySummary);
 
 export default router;
