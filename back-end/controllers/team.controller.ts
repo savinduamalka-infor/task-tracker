@@ -60,24 +60,24 @@ export const createTeam = async (req: Request, res: Response) => {
     console.log(`team created with ID: ${team._id}`);
     console.log(`Total team members: ${team.members.length}`);
 
-    // Ensure creator has a local User document and set their teamId
-    let creatorDoc = await User.findById(user.id);
-    if (!creatorDoc) {
-      creatorDoc = new User({
-        _id: user.id,
-        email: user.email || undefined,
-        name: user.name || "",
-        role: user.role || "Lead",
-        teamId: team._id,
-        jobTitle: user.jobTitle || null,
-        isActive: true,
-        emailVerified: user.emailVerified || false,
-        image: user.image || undefined,
-      });
-      await creatorDoc.save();
-    } else {
-      await User.findByIdAndUpdate(user.id, { teamId: team._id });
-    }
+    // // Ensure creator has a local User document and set their teamId
+    // let creatorDoc = await User.findById(user.id);
+    // if (!creatorDoc) {
+    //   creatorDoc = new User({
+    //     _id: user.id,
+    //     email: user.email || undefined,
+    //     name: user.name || "",
+    //     role: user.role || "Lead",
+    //     teamId: team._id,
+    //     jobTitle: user.jobTitle || null,
+    //     isActive: true,
+    //     emailVerified: user.emailVerified || false,
+    //     image: user.image || undefined,
+    //   });
+    //   await creatorDoc.save();
+    // } else {
+    //   await User.findByIdAndUpdate(user.id, { teamId: team._id });
+    // }
 
     res.status(201).json({
       message: "Team created successfully",
