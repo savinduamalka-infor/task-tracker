@@ -42,3 +42,10 @@ export const summaryApi = {
   getDaily: (date?: string) =>
     api.get("/api/summary/daily", { params: date ? { date } : {} }),
 };
+
+export const noteApi = {
+  autocomplete: (partialText: string, taskTitle?: string) =>
+    api.post("/api/notes/autocomplete", { partialText, taskTitle }),
+  refine: (note: string, taskTitle?: string) =>
+    api.post("/api/notes/refine", { note, taskTitle }),
+};

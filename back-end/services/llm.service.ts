@@ -52,6 +52,87 @@ export interface DailySummaryTask {
   }>;
 }
 
+export async function autocompleteNote(
+  partialText: string,
+  taskTitle?: string
+): Promise<string> {
+  try {
+    const context = taskTitle ? ` for the task "${taskTitle}"` : "";
+    const response = await axios.post(
+      LLM_API_URL,
+      {
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content: `You are an autocomplete assistant for a daily standup update note${context}. Given the partial text the user has typed so far, suggest a natural continuation. Return ONLY the completion text (the part that comes AFTER what the user already typed). Keep it concise (1-2 sentences max). Do not repeat the user's text. Do not add any prefixes, quotes, or explanations.`,
+          },
+          {
+            role: "user",
+            content: partialText,
+          },
+        ],
+        temperature: 0.6,
+        max_tokens: 100,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.LLM_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data.choices[0].message.content?.trim() || "";
+  } catch (error) {
+    console.error("LLM autocomplete error:", error);
+    return "";
+  }
+}
+
+export async function refineNote(
+  note: string,
+  taskTitle?: string
+): Promise<string> {
+  try {
+    const context = taskTitle ? ` The task is: "${taskTitle}".` : "";
+    const response = await axios.post(
+      LLM_API_URL,
+      {
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content: `You are a professional technical writing assistant.${context} Given a rough daily update note, refine it by:
+1. Fixing grammar and spelling errors
+2. Making it more detailed and professional
+3. Keeping the same meaning and intent
+4. Using clear, concise technical language
+Return ONLY the refined note text. Do not add any prefixes, explanations, or quotes.`,
+          },
+          {
+            role: "user",
+            content: note,
+          },
+        ],
+        temperature: 0.4,
+        max_tokens: 300,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.LLM_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data.choices[0].message.content?.trim() || note;
+  } catch (error) {
+    console.error("LLM refine error:", error);
+    return note;
+  }
+}
+
 export async function generateDailySummary(
   date: string,
   tasks: DailySummaryTask[]
