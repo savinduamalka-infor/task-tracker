@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { PriorityBadge } from "@/components/StatusBadge";
-import { CalendarDays, ListChecks } from "lucide-react";
+import { CalendarDays, ListChecks, Link2 } from "lucide-react";
 import { Task, User } from "@/lib/types";
 import { format, parseISO, isPast, isToday } from "date-fns";
 
@@ -26,10 +27,25 @@ export function TaskCard({ task, onClick, users }: TaskCardProps) {
       onClick={onClick}
     >
       <CardContent className="p-3 space-y-2">
+        {task.isSubtask && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Link2 className="h-3 w-3" />
+            <span className="truncate">
+              {task.parentTaskTitle ? `Subtask of: ${task.parentTaskTitle}` : "Subtask"}
+            </span>
+          </div>
+        )}
         <p className="font-medium text-sm leading-snug">{task.title}</p>
         <p className="text-xs text-muted-foreground line-clamp-2">{task.summary}</p>
         <div className="flex items-center justify-between pt-1">
-          <PriorityBadge priority={task.priority} />
+          <div className="flex items-center gap-1.5">
+            <PriorityBadge priority={task.priority} />
+            {task.isSubtask && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                Sub
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {subtasksTotal > 0 && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">

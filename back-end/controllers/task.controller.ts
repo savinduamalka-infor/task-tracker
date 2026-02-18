@@ -3,9 +3,17 @@ import { TaskModel } from "../models/task.model.js";
 
 export async function createTask(req: Request, res: Response) {
   try {
+    const user = req.user!;
+
+    if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
+      res.status(403).json({ error: "Members can only assign tasks to themselves" });
+      return;
+    }
+
     const task = await TaskModel.create({
       ...req.body,
-      reporterId: req.user!.id,
+      assigneeId: user.role === "Member" ? user.id : req.body.assigneeId,
+      reporterId: user.id,
     });
     res.status(201).json(task);
   } catch (error) {
@@ -16,7 +24,12 @@ export async function createTask(req: Request, res: Response) {
 
 export async function getAllTasks(req: Request, res: Response) {
   try {
-    const tasks = await TaskModel.find();
+    const { mainOnly } = req.query;
+    const filter: any = {};
+    if (mainOnly === "true") {
+      filter.isSubtask = { $ne: true };
+    }
+    const tasks = await TaskModel.find(filter);
     res.json(tasks);
   } catch (error) {
     console.error("Get tasks error:", error);
@@ -78,6 +91,8 @@ export async function deleteTask(req: Request, res: Response) {
       res.status(404).json({ error: "Task not found" });
       return;
     }
+    // Cascade delete subtasks
+    await TaskModel.deleteMany({ parentTaskId: req.params.id });
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
     console.error("Delete task error:", error);

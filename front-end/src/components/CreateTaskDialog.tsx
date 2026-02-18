@@ -65,11 +65,11 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
     },
   });
 
+  const isMember = (currentUser.role || "Member").toLowerCase() === "member";
+
   useEffect(() => {
     if (open) {
-      const effectiveRole = (currentRole || currentUser.role || "Member").toLowerCase();
-      
-      if (effectiveRole === "member") {
+      if (isMember) {
         setUsers([{ _id: currentUser.id, name: "Assign to me" }]);
         setValue("assigneeId", currentUser.id);
       } else {
@@ -87,7 +87,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
           });
       }
     }
-  }, [open, currentRole, currentUser.role, currentUser.id, setValue, toast]);
+  }, [open, isMember, currentUser.id, setValue, toast]);
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -147,7 +147,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
                 name="assigneeId"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isMember}>
                     <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
                     <SelectContent>
                       {users.map((u) => (

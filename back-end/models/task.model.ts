@@ -21,6 +21,8 @@ export interface ITask extends Document {
   restrictTo?: string[];
   teamId?: string;
   completedAt?: Date;
+  parentTaskId?: string;
+  isSubtask: boolean;
   updates: IUpdate[];
   createdAt: Date;
   updatedAt: Date;
@@ -83,6 +85,14 @@ const taskSchema = new Schema<ITask>(
       default: null,
     },
     completedAt: { type: Date },
+    parentTaskId: {
+      type: String,
+      default: null,
+    },
+    isSubtask: {
+      type: Boolean,
+      default: false,
+    },
     updates: {
       type: [updateSchema],
       default: [],
@@ -97,6 +107,7 @@ const taskSchema = new Schema<ITask>(
 taskSchema.index({ teamId: 1, status: 1 });
 taskSchema.index({ assigneeId: 1 });
 taskSchema.index({ teamId: 1, assigneeId: 1 });
+taskSchema.index({ parentTaskId: 1 });
 
 export const TaskModel =
   (mongoose.models.Task as mongoose.Model<ITask>) ||

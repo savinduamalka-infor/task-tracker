@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
 export interface IUser {
-  _id: Schema.Types.ObjectId;
+  _id: string;
   email: string;
   name: string;
   role: "Admin" | "Lead" | "Member";
@@ -17,6 +17,9 @@ export interface IUser {
 
 const userSchema = new Schema<IUser>(
   {
+    _id: {
+      type: String,
+    },
     email: {
       type: String,
       required: true,

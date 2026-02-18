@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,14 +6,16 @@ import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { MessageSquarePlus, CalendarDays, Inbox } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
 import { format, parseISO, differenceInDays } from "date-fns";
+import { Task } from "@/lib/types";
 
 interface MemberDashboardProps {
   onQuickUpdate: (taskId: string) => void;
   onTaskClick: (taskId: string) => void;
+  tasks: Task[];
 }
 
-export function MemberDashboard({ onQuickUpdate, onTaskClick }: MemberDashboardProps) {
-  const { tasks, currentUser } = useTaskStore();
+export function MemberDashboard({ onQuickUpdate, onTaskClick, tasks }: MemberDashboardProps) {
+  const { currentUser } = useTaskStore();
 
   const myTasks = tasks.filter((t) => t.assigneeId === currentUser.id);
   const doneTasks = myTasks.filter((t) => t.status === "DONE").length;
