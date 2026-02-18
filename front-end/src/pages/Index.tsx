@@ -20,10 +20,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
+
+
 const Index = () => {
+<<<<<<< HEAD
   const { currentRole } = useTaskStore();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+=======
+  const { tasks, currentRole } = useTaskStore();
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+>>>>>>> feature/team-members
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -146,10 +153,19 @@ const Index = () => {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {currentRole === "Lead" ? (
+<<<<<<< HEAD
           <LeadDashboard onCreateTask={() => setCreateOpen(true)} tasks={tasks} />
         ) : (
           <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} tasks={tasks} />
         )}
+=======
+          <LeadDashboard 
+          onCreateTask={() => setCreateOpen(true)} 
+          />
+        ) : (
+          <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} />
+        )}$
+>>>>>>> feature/team-members
 
         <Tabs defaultValue="board">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -200,7 +216,12 @@ const Index = () => {
           loadTasks();
         }}
       />
+<<<<<<< HEAD
       <CreateTaskDialog open={createOpen} onClose={() => { setCreateOpen(false); loadTasks(); }} />
+=======
+      <CreateTaskDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+
+>>>>>>> feature/team-members
       <DailyUpdateDialog
         open={updateOpen}
         taskId={updateTaskId}

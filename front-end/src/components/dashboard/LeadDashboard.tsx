@@ -33,9 +33,12 @@ export function LeadDashboard({ onCreateTask, tasks }: LeadDashboardProps) {
           <h2 className="text-2xl font-bold tracking-tight">Team Overview</h2>
           <p className="text-sm text-muted-foreground">Monitor your team's progress and manage tasks.</p>
         </div>
+        <div className="flex items-center space-x-3">
+
         <Button onClick={onCreateTask} className="gap-2">
           <Plus className="h-4 w-4" /> Assign Task
         </Button>
+        </div>
       </div>
 
       <Card>

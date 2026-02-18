@@ -52,3 +52,17 @@ export interface Task {
   isSubtask: boolean;
   parentTaskTitle?: string;
 }
+
+export interface TeamMember{
+  id: string;
+  name: string;
+  role: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description: string;
+  members?: TeamMember[];
+}
+
