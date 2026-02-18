@@ -32,15 +32,11 @@ export async function getDailySummary(req: Request, res: Response) {
       return;
     }
 
-    const assigneeIds = [...new Set(tasks.map((t) => t.assigneeId))];
-    const users = await mongoose.connection.db!
+    const allUsers = await mongoose.connection.db!
       .collection("user")
-      .find(
-        { _id: { $in: assigneeIds } as any },
-        { projection: { _id: 1, name: 1 } }
-      )
+      .find({}, { projection: { _id: 1, name: 1 } })
       .toArray();
-    const userMap = new Map(users.map((u) => [String(u._id), u.name as string]));
+    const userMap = new Map(allUsers.map((u) => [String(u._id), u.name as string]));
 
     const summaryTasks: DailySummaryTask[] = tasks.map((task) => {
       const todayUpdates = (task.updates || [])
