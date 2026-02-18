@@ -49,3 +49,7 @@ export const noteApi = {
   refine: (note: string, taskTitle?: string) =>
     api.post("/api/notes/refine", { note, taskTitle }),
 };
+
+export const progressApi = {
+  getTaskProgress: (taskId: string) => api.get(`/api/tasks/${taskId}/progress`),
+};
