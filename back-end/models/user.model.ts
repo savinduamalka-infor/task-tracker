@@ -62,4 +62,5 @@ const userSchema = new Schema<IUser>(
 
 export const User =
   (mongoose.models.user as mongoose.Model<IUser>) ||
-  mongoose.model<IUser>("user", userSchema);
+  mongoose.model<IUser>("user", userSchema, "user");
+  

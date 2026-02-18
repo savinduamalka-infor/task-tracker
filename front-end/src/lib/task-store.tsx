@@ -9,6 +9,8 @@ interface TaskStore {
   currentUser: User;
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
+  setCurrentUser: (user: User) => void;   
+  logout: () => void;
   addTeam: (team: Team) => void;
   addTask: (task: Omit<Task, "id" | "createdAt" | "updates">) => void;
   addUpdate: (taskId: string, update: Omit<TaskUpdate, "date" | "updatedBy">) => void;

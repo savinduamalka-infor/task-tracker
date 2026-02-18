@@ -37,6 +37,7 @@ export function Navbar() {
           headers: {
             "Content-Type": "application/json",
           },
+          withCredentials: true,
         }
       );
     } catch (error) {
