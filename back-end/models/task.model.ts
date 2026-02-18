@@ -1,25 +1,25 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUpdate {
   date: Date;
   note: string;
   status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
   blockedReason?: string;
-  updatedBy: Types.ObjectId;
+  updatedBy: string;
 }
 
 export interface ITask extends Document {
   title: string;
   summary?: string;
   description?: string;
-  assigneeId: Types.ObjectId;
+  assigneeId: string;
   status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
   priority: "Low" | "Medium" | "High";
   startDate?: Date;
   dueDate?: Date;
-  reporterId: Types.ObjectId;
-  restrictTo?: Types.ObjectId[];
-  teamId: Types.ObjectId;
+  reporterId: string;
+  restrictTo?: string[];
+  teamId?: string;
   completedAt?: Date;
   updates: IUpdate[];
   createdAt: Date;
@@ -37,8 +37,7 @@ const updateSchema = new Schema<IUpdate>(
     },
     blockedReason: { type: String, trim: true },
     updatedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "user",
+      type: String,
       required: true,
     },
   },
@@ -56,8 +55,7 @@ const taskSchema = new Schema<ITask>(
     summary: { type: String, trim: true },
     description: { type: String, trim: true },
     assigneeId: {
-      type: Schema.Types.ObjectId,
-      ref: "user",
+      type: String,
       required: true,
     },
     status: {
@@ -73,19 +71,16 @@ const taskSchema = new Schema<ITask>(
     startDate: { type: Date },
     dueDate: { type: Date },
     reporterId: {
-      type: Schema.Types.ObjectId,
-      ref: "user",
+      type: String,
       required: true,
     },
     restrictTo: {
-      type: [Schema.Types.ObjectId],
-      ref: "user",
+      type: [String],
       default: [],
     },
     teamId: {
-      type: Schema.Types.ObjectId,
-      ref: "Team",
-      required: true,
+      type: String,
+      default: null,
     },
     completedAt: { type: Date },
     updates: {
