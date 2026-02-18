@@ -204,6 +204,7 @@ const Index = () => {
       <DailyUpdateDialog
         open={updateOpen}
         taskId={updateTaskId}
+        taskTitle={tasks.find(t => t.id === updateTaskId)?.title}
         onClose={() => setUpdateOpen(false)}
         onSuccess={loadTasks}
       />
