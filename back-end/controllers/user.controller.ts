@@ -14,7 +14,9 @@ export function getAdminDashboard(req: Request, res: Response) {
 
 export async function getAllUsers(req: Request, res: Response) {
   try {
-    const users = await User.find().select("_id name email role jobTitle teamId");
+    const users = await User.find()
+      .select("_id name email role jobTitle teamId")
+      .lean();
     res.json(users);
   } catch (error) {
     console.error("Get users error:", error);

@@ -5,6 +5,7 @@ export type TaskStatus = "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
 export type TaskPriority = "Low" | "Medium" | "High";
 
 export interface User {
+  _id: string;
   id: string;
   email: string;
   name: string;

@@ -1,5 +1,5 @@
 import { TaskStatus } from "@/lib/types";
-import { Task } from "@/lib/types";
+import { Task, User } from "@/lib/types";
 import { TaskCard } from "./TaskCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -20,9 +20,10 @@ const columnAccent: Record<TaskStatus, string> = {
 interface TaskBoardProps {
   onTaskClick: (taskId: string) => void;
   tasks: Task[];
+  users: User[];
 }
 
-export function TaskBoard({ onTaskClick, tasks }: TaskBoardProps) {
+export function TaskBoard({ onTaskClick, tasks, users }: TaskBoardProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -45,7 +46,7 @@ export function TaskBoard({ onTaskClick, tasks }: TaskBoardProps) {
                   </div>
                 ) : (
                   colTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task.id)} />
+                    <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task.id)} users={users} />
                   ))
                 )}
               </div>

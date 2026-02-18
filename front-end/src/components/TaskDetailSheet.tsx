@@ -15,22 +15,24 @@ import {
 import { useTaskStore } from "@/lib/task-store";
 import { subtaskApi } from "@/lib/api";
 import { format, parseISO } from "date-fns";
-import { Task, TaskStatus } from "@/lib/types";
+import { Task, TaskStatus, User as UserType } from "@/lib/types";
 
 interface TaskDetailSheetProps {
   task: Task | null;
   open: boolean;
   onClose: () => void;
   onAddUpdate: (taskId: string) => void;
+  users: UserType[];
 }
 
-export function TaskDetailSheet({ task, open, onClose, onAddUpdate }: TaskDetailSheetProps) {
-  const { getUserById } = useTaskStore();
+export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users }: TaskDetailSheetProps) {
+  const { currentUser } = useTaskStore();
   const [suggesting, setSuggesting] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]);
 
   if (!task) return null;
 
+  const getUserById = (id: string) => users.find(u => u._id === id);
   const assignee = getUserById(task.assigneeId);
   const reporter = getUserById(task.reportedBy);
 
@@ -114,9 +116,11 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate }: TaskDetail
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" onClick={() => onAddUpdate(task.id)}>
-              <MessageSquarePlus className="mr-1.5 h-4 w-4" /> Add Update
-            </Button>
+            {task.assigneeId === currentUser.id && (
+              <Button size="sm" onClick={() => onAddUpdate(task.id)}>
+                <MessageSquarePlus className="mr-1.5 h-4 w-4" /> Add Update
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"

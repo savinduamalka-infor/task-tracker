@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect } from "react";
@@ -48,6 +48,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -57,6 +58,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
+      assigneeId: "",
       priority: "Medium",
       startDate: new Date().toISOString().split("T")[0],
       dueDate: "",
@@ -65,14 +67,16 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
 
   useEffect(() => {
     if (open) {
-      const userRole = currentUser.role || "Member";
+      const effectiveRole = (currentRole || currentUser.role || "Member").toLowerCase();
       
-      if (userRole === "Member") {
+      if (effectiveRole === "member") {
         setUsers([{ _id: currentUser.id, name: "Assign to me" }]);
         setValue("assigneeId", currentUser.id);
       } else {
         userApi.getAll()
-          .then(res => setUsers(res.data))
+          .then((res) => {
+            setUsers(res.data || []);
+          })
           .catch(err => {
             console.error("Failed to load users:", err);
             toast({
@@ -83,7 +87,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
           });
       }
     }
-  }, [open, currentUser.role, currentUser.id, setValue, toast]);
+  }, [open, currentRole, currentUser.role, currentUser.id, setValue, toast]);
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -139,14 +143,20 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Assignee</Label>
-              <Select onValueChange={(v) => setValue("assigneeId", v)} value={watch("assigneeId")}>
-                <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="assigneeId"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="Select assignee" /></SelectTrigger>
+                    <SelectContent>
+                      {users.map((u) => (
+                        <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.assigneeId && <p className="text-xs text-destructive mt-1">{errors.assigneeId.message}</p>}
             </div>
             <div>
