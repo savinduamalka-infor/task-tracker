@@ -5,6 +5,7 @@ import { getSession, signOut } from "../controllers/auth.controller.js";
 import { createTask, getAllTasks, getTaskById, updateTask, deleteTask } from "../controllers/task.controller.js";
 import { suggestSubtasks, addSubtaskToParent, getSubtasksByParent } from "../controllers/subtask.controller.js";
 import { getDailySummary } from "../controllers/summary.controller.js";
+import { autocompleteNoteHandler, refineNoteHandler } from "../controllers/note.controller.js";
 
 const router = Router();
 
@@ -24,5 +25,8 @@ router.post("/api/subtasks/suggest", protectedRoute, suggestSubtasks);
 router.post("/api/subtasks/:parentTaskId", protectedRoute, addSubtaskToParent);
 router.get("/api/subtasks/:parentTaskId", protectedRoute, getSubtasksByParent);
 router.get("/api/summary/daily", protectedRoute, getDailySummary);
+
+router.post("/api/notes/autocomplete", protectedRoute, autocompleteNoteHandler);
+router.post("/api/notes/refine", protectedRoute, refineNoteHandler);
 
 export default router;
