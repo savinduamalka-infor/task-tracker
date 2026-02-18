@@ -49,4 +49,7 @@ export interface Task {
   createdAt: string;
   updates: TaskUpdate[];
   suggestedSubtasks: SuggestedSubtask[];
+  parentTaskId?: string;
+  isSubtask: boolean;
+  parentTaskTitle?: string;
 }

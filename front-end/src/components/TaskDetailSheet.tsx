@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2,
+  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2,
 } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
 import { subtaskApi } from "@/lib/api";
 import { format, parseISO } from "date-fns";
 import { Task, TaskStatus, User as UserType } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 interface TaskDetailSheetProps {
   task: Task | null;
@@ -23,12 +24,19 @@ interface TaskDetailSheetProps {
   onClose: () => void;
   onAddUpdate: (taskId: string) => void;
   users: UserType[];
+  onSubtaskAdded?: () => void;
+  onTaskClick?: (taskId: string) => void;
+  allTasks?: Task[];
 }
 
-export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users }: TaskDetailSheetProps) {
+export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSubtaskAdded, onTaskClick, allTasks = [] }: TaskDetailSheetProps) {
   const { currentUser } = useTaskStore();
+  const { toast } = useToast();
   const [suggesting, setSuggesting] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]);
+  const [selectedSubtaskIndices, setSelectedSubtaskIndices] = useState<Set<number>>(new Set());
+  const [addingSubtasks, setAddingSubtasks] = useState(false);
+  const [addedSubtaskIndices, setAddedSubtaskIndices] = useState<Set<number>>(new Set());
 
   if (!task) return null;
 
@@ -43,6 +51,8 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users }: Tas
 
   const handleSuggestSubtasks = async () => {
     setSuggesting(true);
+    setAddedSubtaskIndices(new Set());
+    setSelectedSubtaskIndices(new Set());
     try {
       const response = await subtaskApi.suggest(task.title, task.description || "");
       if (response.data.subtasks && response.data.subtasks.length > 0) {
@@ -61,6 +71,70 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users }: Tas
     }
   };
 
+  const toggleSubtaskSelection = (index: number) => {
+    setSelectedSubtaskIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const handleAddSelectedSubtasks = async () => {
+    const toAdd = Array.from(selectedSubtaskIndices)
+      .filter((idx) => !addedSubtaskIndices.has(idx))
+      .map((idx) => allSubtasks[idx])
+      .filter(Boolean);
+
+    if (toAdd.length === 0) return;
+
+    setAddingSubtasks(true);
+    let successCount = 0;
+    const newAdded = new Set(addedSubtaskIndices);
+
+    for (const st of toAdd) {
+      try {
+        await subtaskApi.addToParent(task.id, {
+          title: st.title,
+          description: st.description || "",
+        });
+        const idx = allSubtasks.indexOf(st);
+        newAdded.add(idx);
+        successCount++;
+      } catch (error) {
+        console.error("Failed to add subtask:", st.title, error);
+      }
+    }
+
+    setAddedSubtaskIndices(newAdded);
+    setSelectedSubtaskIndices(new Set());
+    setAddingSubtasks(false);
+
+    if (successCount > 0) {
+      toast({
+        title: "Subtasks Added",
+        description: `${successCount} subtask${successCount > 1 ? "s" : ""} added successfully.`,
+      });
+      onSubtaskAdded?.();
+    }
+    if (successCount < toAdd.length) {
+      toast({
+        title: "Warning",
+        description: `${toAdd.length - successCount} subtask(s) failed to add.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const existingSubtasks = allTasks.filter((t) => t.parentTaskId === task.id);
+
+  const parentTask = task.isSubtask && task.parentTaskId
+    ? allTasks.find((t) => t.id === task.parentTaskId)
+    : null;
+
   // Build unified activity feed: updates + subtask completions integrated
   const allCompletedSubtaskIds = new Set(
     task.updates.flatMap((u) => u.subtaskCompletions ?? [])
@@ -73,9 +147,23 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users }: Tas
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={task.status} />
             <PriorityBadge priority={task.priority} />
+            {task.isSubtask && (
+              <Badge variant="outline" className="text-xs gap-1">
+                <Link2 className="h-3 w-3" /> Subtask
+              </Badge>
+            )}
           </div>
           <SheetTitle className="text-xl mt-2">{task.title}</SheetTitle>
           <p className="text-sm text-muted-foreground">{task.summary}</p>
+          {parentTask && (
+            <button
+              onClick={() => onTaskClick?.(parentTask.id)}
+              className="flex items-center gap-1.5 text-xs text-primary hover:underline mt-1 w-fit"
+            >
+              <Link2 className="h-3 w-3" />
+              Parent: {parentTask.title}
+            </button>
+          )}
         </SheetHeader>
 
         <div className="space-y-4">
@@ -133,23 +221,105 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users }: Tas
             </Button>
           </div>
 
-          {/* Subtask Progress */}
+          {/* Suggested Subtask Progress */}
           {subtasksTotal > 0 && (
             <>
               <Separator />
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-semibold flex items-center gap-1.5">
-                    <ListChecks className="h-4 w-4" /> Suggested Subtasks
+                    <ListChecks className="h-4 w-4" /> AI Suggested Subtasks
                   </h4>
                   <span className="text-xs text-muted-foreground">{subtasksDone}/{subtasksTotal} done</span>
                 </div>
                 <Progress value={subtaskProgress} className="h-1.5 mb-3" />
                 <div className="space-y-1.5">
-                  {allSubtasks.map((st) => (
-                    <div
+                  {allSubtasks.map((st, idx) => {
+                    const isAdded = addedSubtaskIndices.has(idx);
+                    const isSuggested = idx >= task.suggestedSubtasks.length;
+                    const isSelected = selectedSubtaskIndices.has(idx);
+                    const isSelectable = isSuggested && !isAdded;
+
+                    return (
+                      <div
+                        key={st.id}
+                        className={`flex items-center gap-2 text-sm rounded-md p-2 transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-primary/10 ring-1 ring-primary/30"
+                            : "bg-muted/30 hover:bg-muted/50"
+                        } ${isAdded ? "opacity-60 cursor-default" : ""}`}
+                        onClick={() => isSelectable && toggleSubtaskSelection(idx)}
+                      >
+                        {isAdded ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        ) : isSelected ? (
+                          <div className="h-4 w-4 rounded-full bg-primary border-2 border-primary shrink-0 flex items-center justify-center">
+                            <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        ) : st.status === "DONE" ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0 hover:border-primary/60 transition-colors" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className={isAdded ? "line-through text-muted-foreground" : st.status === "DONE" ? "line-through text-muted-foreground" : "font-medium"}>
+                            {st.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">{st.description}</p>
+                        </div>
+                        {isAdded && (
+                          <Badge variant="outline" className="text-xs text-emerald-600 shrink-0">
+                            Added
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add Selected Subtasks Button */}
+                {subtasks.length > 0 && (
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground">
+                      {selectedSubtaskIndices.size > 0
+                        ? `${selectedSubtaskIndices.size} subtask${selectedSubtaskIndices.size > 1 ? "s" : ""} selected`
+                        : "Select subtasks to add"}
+                    </p>
+                    <Button
+                      size="sm"
+                      disabled={selectedSubtaskIndices.size === 0 || addingSubtasks}
+                      onClick={handleAddSelectedSubtasks}
+                      className="gap-1.5"
+                    >
+                      {addingSubtasks ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <PlusCircle className="h-3.5 w-3.5" />
+                      )}
+                      {addingSubtasks
+                        ? "Adding..."
+                        : `Add${selectedSubtaskIndices.size > 0 ? ` (${selectedSubtaskIndices.size})` : ""}`}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Existing Subtasks from DB */}
+          {existingSubtasks.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+                  <ListChecks className="h-4 w-4" /> Subtasks ({existingSubtasks.length})
+                </h4>
+                <div className="space-y-1.5">
+                  {existingSubtasks.map((st) => (
+                    <button
                       key={st.id}
-                      className="flex items-center gap-2 text-sm rounded-md p-2 bg-muted/30"
+                      onClick={() => onTaskClick?.(st.id)}
+                      className="flex items-center gap-2 text-sm rounded-md p-2 bg-muted/30 w-full text-left hover:bg-muted/50 transition-colors"
                     >
                       {st.status === "DONE" ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -160,9 +330,9 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users }: Tas
                         <p className={st.status === "DONE" ? "line-through text-muted-foreground" : "font-medium"}>
                           {st.title}
                         </p>
-                        <p className="text-xs text-muted-foreground truncate">{st.description}</p>
                       </div>
-                    </div>
+                      <StatusBadge status={st.status} />
+                    </button>
                   ))}
                 </div>
               </div>

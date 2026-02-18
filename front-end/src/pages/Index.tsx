@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Navbar } from "@/components/Navbar";
 import { LeadDashboard } from "@/components/dashboard/LeadDashboard";
 import { MemberDashboard } from "@/components/dashboard/MemberDashboard";
@@ -10,8 +10,9 @@ import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
 import { taskApi, userApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutGrid, Table2 } from "lucide-react";
+import { LayoutGrid, Table2, Filter } from "lucide-react";
 import { Task, User } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { currentRole } = useTaskStore();
@@ -22,6 +23,7 @@ const Index = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [updateTaskId, setUpdateTaskId] = useState<string | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
+  const [showMainOnly, setShowMainOnly] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -34,10 +36,10 @@ const Index = () => {
       .catch(err => console.error("Failed to load users:", err));
   };
 
-  const loadTasks = () => {
+  const loadTasks = useCallback(() => {
     taskApi.getAll()
       .then(res => {
-        const mappedTasks = res.data.map((t: any) => ({
+        const allTasks: Task[] = res.data.map((t: any) => ({
           id: t._id,
           title: t.title,
           summary: t.summary || "",
@@ -51,11 +53,23 @@ const Index = () => {
           createdAt: t.createdAt,
           updates: t.updates || [],
           suggestedSubtasks: [],
+          parentTaskId: t.parentTaskId || undefined,
+          isSubtask: t.isSubtask || false,
+          parentTaskTitle: undefined,
         }));
-        setTasks(mappedTasks);
+        const taskMap = new Map(allTasks.map(t => [t.id, t]));
+        allTasks.forEach(t => {
+          if (t.parentTaskId) {
+            const parent = taskMap.get(t.parentTaskId);
+            t.parentTaskTitle = parent?.title;
+          }
+        });
+        setTasks(allTasks);
       })
       .catch(err => console.error("Failed to load tasks:", err));
-  };
+  }, []);
+
+  const filteredTasks = showMainOnly ? tasks.filter(t => !t.isSubtask) : tasks;
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
 
@@ -80,19 +94,30 @@ const Index = () => {
         )}
 
         <Tabs defaultValue="board">
-          <TabsList>
-            <TabsTrigger value="board" className="gap-1.5">
-              <LayoutGrid className="h-4 w-4" /> Board
-            </TabsTrigger>
-            <TabsTrigger value="table" className="gap-1.5">
-              <Table2 className="h-4 w-4" /> Table
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <TabsList>
+              <TabsTrigger value="board" className="gap-1.5">
+                <LayoutGrid className="h-4 w-4" /> Board
+              </TabsTrigger>
+              <TabsTrigger value="table" className="gap-1.5">
+                <Table2 className="h-4 w-4" /> Table
+              </TabsTrigger>
+            </TabsList>
+            <Button
+              size="sm"
+              variant={showMainOnly ? "default" : "outline"}
+              onClick={() => setShowMainOnly(!showMainOnly)}
+              className="gap-1.5"
+            >
+              <Filter className="h-4 w-4" />
+              {showMainOnly ? "Main Tasks Only" : "All Tasks"}
+            </Button>
+          </div>
           <TabsContent value="board" className="mt-4">
-            <TaskBoard onTaskClick={openTaskDetail} tasks={tasks} users={users} />
+            <TaskBoard onTaskClick={openTaskDetail} tasks={filteredTasks} users={users} />
           </TabsContent>
           <TabsContent value="table" className="mt-4">
-            <TaskTable onTaskClick={openTaskDetail} tasks={tasks} />
+            <TaskTable onTaskClick={openTaskDetail} tasks={filteredTasks} />
           </TabsContent>
         </Tabs>
       </main>
@@ -106,6 +131,11 @@ const Index = () => {
           openUpdate(id);
         }}
         users={users}
+        onSubtaskAdded={loadTasks}
+        onTaskClick={(id) => {
+          setSelectedTaskId(id);
+        }}
+        allTasks={tasks}
       />
       <CreateTaskDialog open={createOpen} onClose={() => { setCreateOpen(false); loadTasks(); }} />
       <DailyUpdateDialog
