@@ -104,6 +104,9 @@ const Index = () => {
   };
 
   const applyStatusChange = async (taskId: string, newStatus: TaskStatus, reason?: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
     // Optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
@@ -119,11 +122,11 @@ const Index = () => {
       }
       await taskApi.update(taskId, updatePayload);
       toast({ title: "Status Updated", description: `Task moved to ${newStatus.replace("_", " ")}.` });
-      loadTasks(); // Refresh from server
+      loadTasks();
     } catch (error) {
       console.error("Failed to update task status:", error);
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
-      loadTasks(); // Revert by reloading
+      loadTasks();
     }
   };
 

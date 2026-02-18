@@ -44,14 +44,17 @@ export async function getDailySummary(req: Request, res: Response) {
           const d = new Date(u.date);
           return d >= startOfDay && d <= endOfDay;
         })
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .map((u) => ({
           note: u.note,
           blockedReason: u.blockedReason,
         }));
 
+      const effectiveStatus = task.status;
+
       return {
         title: task.title,
-        status: task.status,
+        status: effectiveStatus,
         priority: task.priority,
         assigneeName: userMap.get(String(task.assigneeId)) || "Unknown",
         updates: todayUpdates,

@@ -142,7 +142,7 @@ export async function generateDailySummary(
       const updateNotes = t.updates.length
         ? t.updates.map((u) => `  - ${u.note}${u.blockedReason ? ` (Blocked: ${u.blockedReason})` : ""}`).join("\n")
         : "  - No updates submitted today";
-      return `${i + 1}. "${t.title}" (Priority: ${t.priority}, Assignee: ${t.assigneeName}, Current Status: ${t.status})\n${updateNotes}`;
+      return `${i + 1}. "${t.title}" (Priority: ${t.priority}, Assignee: ${t.assigneeName}, Status: ${t.status})\n${updateNotes}`;
     }).join("\n\n");
 
     const response = await axios.post(
@@ -168,19 +168,22 @@ List any blocked tasks with their blocked reasons. If none, say "No blockers —
 ## 📊 Team Snapshot
 Give a 2-3 sentence overall assessment of the team's day — productivity, momentum, any concerns.
 
-Rules:
+CRITICAL RULES:
+- Use ONLY the Status field to categorize each task
+- Each task can appear in ONLY ONE section based on its Status value
+- Status values: DONE=Completed, IN_PROGRESS=In Progress, BLOCKED=Blocked, TODO=not mentioned
+- Do NOT interpret update notes as status indicators
 - Be concise. Use bullet points.
 - Reference assignee names.
 - Do not invent information not in the data.
-- Do not include raw JSON or code blocks.
 - Keep it professional but friendly.`
           },
           {
             role: "user",
-            content: `Date: ${date}\n\nTasks with today's updates:\n\n${taskLines}\n\nGenerate the end-of-day sync summary.`
+            content: `Date: ${date}\n\nTasks with today's updates:\n\n${taskLines}\n\nGenerate the end-of-day sync summary based on the final status shown for each task.`
           }
         ],
-        temperature: 0.5,
+        temperature: 0.2,
         max_tokens: 1000
       },
       {

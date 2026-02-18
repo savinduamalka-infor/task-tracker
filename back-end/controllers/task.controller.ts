@@ -79,11 +79,36 @@ export async function updateTask(req: Request, res: Response) {
         { new: true, runValidators: true }
       );
     } else {
-      task = await TaskModel.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        { new: true, runValidators: true }
-      );
+      const currentTask = await TaskModel.findById(req.params.id);
+      if (currentTask && updateData.status && currentTask.status !== updateData.status) {
+        const statusLabels: Record<string, string> = {
+          TODO: "To Do",
+          IN_PROGRESS: "In Progress",
+          BLOCKED: "Blocked",
+          DONE: "Done",
+        };
+        
+        const statusChangeUpdate = {
+          note: `Status changed from ${statusLabels[currentTask.status]} to ${statusLabels[updateData.status]}`,
+          updatedBy: req.user!.id,
+          date: new Date(),
+        };
+
+        task = await TaskModel.findByIdAndUpdate(
+          req.params.id,
+          { 
+            ...updateData,
+            $push: { updates: statusChangeUpdate }
+          },
+          { new: true, runValidators: true }
+        );
+      } else {
+        task = await TaskModel.findByIdAndUpdate(
+          req.params.id,
+          updateData,
+          { new: true, runValidators: true }
+        );
+      }
     }
     
     if (!task) {
