@@ -6,6 +6,7 @@ import { createTask, getAllTasks, getTaskById, updateTask, deleteTask } from "..
 import { suggestSubtasks, addSubtaskToParent, getSubtasksByParent } from "../controllers/subtask.controller.js";
 import { getDailySummary } from "../controllers/summary.controller.js";
 import { autocompleteNoteHandler, refineNoteHandler } from "../controllers/note.controller.js";
+import { getTaskProgress } from "../controllers/progress.controller.js";
 
 const router = Router();
 
@@ -28,5 +29,7 @@ router.get("/api/summary/daily", protectedRoute, getDailySummary);
 
 router.post("/api/notes/autocomplete", protectedRoute, autocompleteNoteHandler);
 router.post("/api/notes/refine", protectedRoute, refineNoteHandler);
+
+router.get("/api/tasks/:taskId/progress", protectedRoute, getTaskProgress);
 
 export default router;
