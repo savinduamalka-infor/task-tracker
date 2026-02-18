@@ -76,7 +76,7 @@ const Index = () => {
         {currentRole === "Lead" ? (
           <LeadDashboard onCreateTask={() => setCreateOpen(true)} tasks={tasks} />
         ) : (
-          <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} />
+          <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} tasks={tasks} />
         )}
 
         <Tabs defaultValue="board">
