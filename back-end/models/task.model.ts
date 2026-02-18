@@ -3,8 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUpdate {
   date: Date;
   note: string;
-  status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
   blockedReason?: string;
+  subtaskCompletions?: string[];
   updatedBy: string;
 }
 
@@ -32,12 +32,11 @@ const updateSchema = new Schema<IUpdate>(
   {
     date: { type: Date, default: Date.now },
     note: { type: String, required: true, trim: true },
-    status: {
-      type: String,
-      enum: ["TODO", "IN_PROGRESS", "BLOCKED", "DONE"],
-      required: true,
-    },
     blockedReason: { type: String, trim: true },
+    subtaskCompletions: {
+      type: [String],
+      default: undefined,
+    },
     updatedBy: {
       type: String,
       required: true,

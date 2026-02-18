@@ -1,6 +1,6 @@
-import { User, Task, SuggestedSubtask } from "./types";
+import { User, Task } from "./types";
 
-export const mockUsers: User[] = [
+const baseUsers: Omit<User, "_id">[] = [
   {
     id: "u1",
     email: "sarah.chen@company.com",
@@ -47,7 +47,12 @@ export const mockUsers: User[] = [
   },
 ];
 
-export const mockTasks: Task[] = [
+export const mockUsers: User[] = baseUsers.map((user) => ({
+  ...user,
+  _id: user.id,
+}));
+
+const baseTasks: Omit<Task, "isSubtask" | "parentTaskId" | "parentTaskTitle">[] = [
   {
     id: "t1",
     title: "Design new onboarding flow",
@@ -61,9 +66,9 @@ export const mockTasks: Task[] = [
     reportedBy: "u1",
     createdAt: "2026-02-01",
     updates: [
-      { date: "2026-02-03", note: "Started working on wireframes for the first three screens.", status: "IN_PROGRESS", updatedBy: "u2" },
-      { date: "2026-02-07", note: "Wireframes approved. Moving to high-fidelity mockups.", status: "IN_PROGRESS", updatedBy: "u2", subtaskCompletions: ["st1-1", "st1-2"] },
-      { date: "2026-02-12", note: "Mockups 80% complete, finishing up animations.", status: "IN_PROGRESS", updatedBy: "u2", subtaskCompletions: ["st1-3"] },
+      { date: "2026-02-03", note: "Started working on wireframes for the first three screens.", updatedBy: "u2" },
+      { date: "2026-02-07", note: "Wireframes approved. Moving to high-fidelity mockups.", updatedBy: "u2", subtaskCompletions: ["st1-1", "st1-2"] },
+      { date: "2026-02-12", note: "Mockups 80% complete, finishing up animations.", updatedBy: "u2", subtaskCompletions: ["st1-3"] },
     ],
     suggestedSubtasks: [
       { id: "st1-1", title: "Wireframe welcome screen", description: "Create low-fi wireframe for the welcome page", status: "DONE", suggestedDate: "2026-02-05" },
@@ -85,10 +90,10 @@ export const mockTasks: Task[] = [
     reportedBy: "u1",
     createdAt: "2026-01-25",
     updates: [
-      { date: "2026-01-28", note: "Set up JWT middleware and basic login endpoint.", status: "IN_PROGRESS", updatedBy: "u3", subtaskCompletions: ["st2-1"] },
-      { date: "2026-02-03", note: "All endpoints implemented. Writing integration tests.", status: "IN_PROGRESS", updatedBy: "u3", subtaskCompletions: ["st2-2", "st2-3"] },
-      { date: "2026-02-06", note: "All tests passing. Ready for review.", status: "IN_PROGRESS", updatedBy: "u3" },
-      { date: "2026-02-07", note: "Code reviewed and merged to main.", status: "DONE", updatedBy: "u1" },
+      { date: "2026-01-28", note: "Set up JWT middleware and basic login endpoint.", updatedBy: "u3", subtaskCompletions: ["st2-1"] },
+      { date: "2026-02-03", note: "All endpoints implemented. Writing integration tests.", updatedBy: "u3", subtaskCompletions: ["st2-2", "st2-3"] },
+      { date: "2026-02-06", note: "All tests passing. Ready for review.", updatedBy: "u3" },
+      { date: "2026-02-07", note: "Code reviewed and merged to main.", updatedBy: "u1" },
     ],
     suggestedSubtasks: [
       { id: "st2-1", title: "Login endpoint", description: "POST /auth/login", status: "DONE", suggestedDate: "2026-01-30" },
@@ -109,8 +114,8 @@ export const mockTasks: Task[] = [
     reportedBy: "u1",
     createdAt: "2026-02-09",
     updates: [
-      { date: "2026-02-10", note: "Started profiling. Main bottleneck is the charts widget.", status: "IN_PROGRESS", updatedBy: "u2" },
-      { date: "2026-02-11", note: "Blocked waiting for the analytics team to provide a lighter data endpoint.", status: "BLOCKED", blockedReason: "Waiting for analytics team to expose a paginated API endpoint instead of returning all data at once.", updatedBy: "u2" },
+      { date: "2026-02-10", note: "Started profiling. Main bottleneck is the charts widget.", updatedBy: "u2" },
+      { date: "2026-02-11", note: "Blocked waiting for the analytics team to provide a lighter data endpoint.", blockedReason: "Waiting for analytics team to expose a paginated API endpoint instead of returning all data at once.", updatedBy: "u2" },
     ],
     suggestedSubtasks: [],
   },
@@ -145,8 +150,8 @@ export const mockTasks: Task[] = [
     reportedBy: "u1",
     createdAt: "2026-02-08",
     updates: [
-      { date: "2026-02-10", note: "Set up Swagger/OpenAPI config. Documenting auth endpoints first.", status: "IN_PROGRESS", updatedBy: "u4" },
-      { date: "2026-02-12", note: "Auth and user endpoints documented. Starting on task endpoints.", status: "IN_PROGRESS", updatedBy: "u4" },
+      { date: "2026-02-10", note: "Set up Swagger/OpenAPI config. Documenting auth endpoints first.", updatedBy: "u4" },
+      { date: "2026-02-12", note: "Auth and user endpoints documented. Starting on task endpoints.", updatedBy: "u4" },
     ],
     suggestedSubtasks: [],
   },
@@ -163,9 +168,9 @@ export const mockTasks: Task[] = [
     reportedBy: "u2",
     createdAt: "2026-02-01",
     updates: [
-      { date: "2026-02-04", note: "Set up theme provider and CSS variables.", status: "IN_PROGRESS", updatedBy: "u4" },
-      { date: "2026-02-08", note: "All components themed. Testing edge cases.", status: "IN_PROGRESS", updatedBy: "u4" },
-      { date: "2026-02-10", note: "Dark mode complete and deployed.", status: "DONE", updatedBy: "u4" },
+      { date: "2026-02-04", note: "Set up theme provider and CSS variables.", updatedBy: "u4" },
+      { date: "2026-02-08", note: "All components themed. Testing edge cases.", updatedBy: "u4" },
+      { date: "2026-02-10", note: "Dark mode complete and deployed.", updatedBy: "u4" },
     ],
     suggestedSubtasks: [],
   },
@@ -212,7 +217,7 @@ export const mockTasks: Task[] = [
     reportedBy: "u1",
     createdAt: "2026-02-09",
     updates: [
-      { date: "2026-02-10", note: "Researching email providers. Leaning toward Resend.", status: "IN_PROGRESS", updatedBy: "u3" },
+      { date: "2026-02-10", note: "Researching email providers. Leaning toward Resend.", updatedBy: "u3" },
     ],
     suggestedSubtasks: [],
   },
@@ -232,3 +237,10 @@ export const mockTasks: Task[] = [
     suggestedSubtasks: [],
   },
 ];
+
+export const mockTasks: Task[] = baseTasks.map((task) => ({
+  ...task,
+  isSubtask: false,
+  parentTaskId: undefined,
+  parentTaskTitle: undefined,
+}));

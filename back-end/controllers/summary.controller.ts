@@ -46,7 +46,6 @@ export async function getDailySummary(req: Request, res: Response) {
         })
         .map((u) => ({
           note: u.note,
-          status: u.status,
           blockedReason: u.blockedReason,
         }));
 

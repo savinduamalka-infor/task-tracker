@@ -434,7 +434,6 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium">{author?.name}</span>
-                          <StatusBadge status={update.status} />
                           <span className="text-xs text-muted-foreground ml-auto">
                             {format(parseISO(update.date), "MMM d")}
                           </span>

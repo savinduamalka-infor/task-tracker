@@ -114,7 +114,6 @@ const Index = () => {
       if (reason) {
         updatePayload.updates = {
           note: `Status changed to Blocked`,
-          status: newStatus,
           blockedReason: reason,
         };
       }

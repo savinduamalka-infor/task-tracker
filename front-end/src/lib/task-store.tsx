@@ -19,6 +19,7 @@ interface TaskStore {
 const TaskStoreContext = createContext<TaskStore | null>(null);
 
 const DEFAULT_USER: User = {
+  _id: "",
   id: "",
   email: "",
   name: "",
@@ -64,7 +65,6 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
         );
         return {
           ...task,
-          status: update.status,
           updates: [...task.updates, newUpdate],
           suggestedSubtasks: updatedSubtasks,
         };
@@ -101,7 +101,7 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
 
   const getUserById = useCallback(
     (id: string) => {
-      return { id, name: "User", email: "user@example.com", role: "Member" as UserRole, teamId: "", jobTitle: "", isActive: true, lastUpdateSubmitted: null };
+      return { _id: id, id, name: "User", email: "user@example.com", role: "Member" as UserRole, teamId: "", jobTitle: "", isActive: true, lastUpdateSubmitted: null };
     },
     []
   );
