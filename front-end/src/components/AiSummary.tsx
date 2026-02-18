@@ -1,35 +1,100 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
-import { useTaskStore } from "@/lib/task-store";
+import { Sparkles } from "lucide-react";
+import { summaryApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export function AiSummary() {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const { tasks, getUserById } = useTaskStore();
+  const [summary, setSummary] = useState<string | null>(null);
+  const [taskCount, setTaskCount] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
 
-  const done = tasks.filter((t) => t.status === "DONE");
-  const blocked = tasks.filter((t) => t.status === "BLOCKED");
-  const total = tasks.length;
-  const progress = total > 0 ? Math.round((done.length / total) * 100) : 0;
-
-  const generate = () => {
+  const generate = async () => {
     setLoading(true);
-    setVisible(false);
-    setTimeout(() => {
+    setSummary(null);
+    try {
+      const res = await summaryApi.getDaily(selectedDate);
+      setSummary(res.data.summary);
+      setTaskCount(res.data.taskCount);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description:
+          err.response?.data?.error || "Failed to generate AI summary",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-      setVisible(true);
-    }, 1800);
+    }
   };
+
+  const renderMarkdown = (md: string) => {
+    const lines = md.split("\n");
+    const html: string[] = [];
+    let inList = false;
+
+    for (const raw of lines) {
+      const line = raw.trim();
+
+      if (!line) {
+        if (inList) { html.push("</ul>"); inList = false; }
+        html.push("<br/>");
+        continue;
+      }
+
+      // Headings
+      if (line.startsWith("## ")) {
+        if (inList) { html.push("</ul>"); inList = false; }
+        html.push(`<h3 class="text-sm font-semibold mt-3 mb-1">${inline(line.slice(3))}</h3>`);
+        continue;
+      }
+
+      // Bullet list items
+      if (/^[-*•]\s/.test(line)) {
+        if (!inList) { html.push('<ul class="list-disc list-inside space-y-0.5 text-muted-foreground">'); inList = true; }
+        html.push(`<li>${inline(line.replace(/^[-*•]\s*/, ""))}</li>`);
+        continue;
+      }
+
+      // Plain paragraph
+      if (inList) { html.push("</ul>"); inList = false; }
+      html.push(`<p class="text-muted-foreground">${inline(line)}</p>`);
+    }
+    if (inList) html.push("</ul>");
+    return html.join("\n");
+  };
+
+  /** Bold + inline code */
+  const inline = (text: string) =>
+    text
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground">$1</strong>')
+      .replace(/`(.+?)`/g, "<code>$1</code>");
 
   return (
     <div className="space-y-3">
-      <Button onClick={generate} disabled={loading} className="gap-2">
-        <Sparkles className="h-4 w-4" />
-        {loading ? "Generating..." : "Generate AI Summary"}
-      </Button>
+      <div className="flex items-end gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Summary Date</Label>
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <Button onClick={generate} disabled={loading} className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          {loading ? "Generating..." : "Generate AI Summary"}
+        </Button>
+      </div>
 
       {loading && (
         <Card>
@@ -38,66 +103,24 @@ export function AiSummary() {
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-2/3" />
             <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/4" />
           </CardContent>
         </Card>
       )}
 
-      {visible && (
+      {summary !== null && !loading && (
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              AI Stand-up Summary
+              AI Daily Sync Summary
+              <span className="ml-auto text-xs font-normal text-muted-foreground">
+                {selectedDate} · {taskCount} task{taskCount !== 1 ? "s" : ""}
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="font-medium">Completed ({done.length})</p>
-                {done.length > 0 ? (
-                  <ul className="text-muted-foreground mt-0.5 space-y-0.5">
-                    {done.map((t) => (
-                      <li key={t.id}>• {t.title} — {getUserById(t.assigneeId)?.name}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground">No tasks completed yet today.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="font-medium">Blocked ({blocked.length})</p>
-                {blocked.length > 0 ? (
-                  <ul className="text-muted-foreground mt-0.5 space-y-0.5">
-                    {blocked.map((t) => {
-                      const lastBlocked = [...t.updates].reverse().find((u) => u.blockedReason);
-                      return (
-                        <li key={t.id}>
-                          • {t.title}: {lastBlocked?.blockedReason ?? "No reason specified"}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground">No blockers — great work!</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <TrendingUp className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <div>
-                <p className="font-medium">Overall Progress</p>
-                <p className="text-muted-foreground">
-                  {progress}% of tasks completed ({done.length}/{total}). The team is
-                  {progress >= 50 ? " on track" : " ramping up"} for this sprint.
-                </p>
-              </div>
-            </div>
+          <CardContent className="text-sm prose-sm max-w-none">
+            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(summary) }} />
           </CardContent>
         </Card>
       )}

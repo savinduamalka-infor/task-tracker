@@ -35,3 +35,8 @@ export const subtaskApi = {
 export const userApi = {
   getAll: () => api.get("/api/users"),
 };
+
+export const summaryApi = {
+  getDaily: (date?: string) =>
+    api.get("/api/summary/daily", { params: date ? { date } : {} }),
+};
