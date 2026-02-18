@@ -72,7 +72,8 @@ export default function Signup() {
           title: "Account Created",
           description: "Your account has been created successfully. Please log in.",
         });
-        navigate("/login");
+        //navigate("/login");
+        navigate("/create-team");
       }
     } catch (error) {
       const errorMessage =

@@ -40,9 +40,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  if (!currentUser.id) {
-    return <Navigate to="/login" replace />;
-  }
+  // if (!currentUser.id) {
+  //   return <Navigate to="/login" replace />;
+  // }
 
   return <>{children}</>;
 }

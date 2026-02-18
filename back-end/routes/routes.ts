@@ -8,6 +8,9 @@ import { getDailySummary } from "../controllers/summary.controller.js";
 import { autocompleteNoteHandler, refineNoteHandler } from "../controllers/note.controller.js";
 import { getTaskProgress } from "../controllers/progress.controller.js";
 
+import {  getUsersWithoutTeam } from "../controllers/user.controller.js";
+//import { getSession, signOut } from "../controllers/auth.controller.js";
+import { createTeam, addTeamMember, removeTeamMember, getTeamMembers } from "../controllers/team.controller";
 const router = Router();
 
 router.get("/api/auth/session", getSession);
@@ -15,7 +18,18 @@ router.post("/api/auth/sign-out", signOut);
 router.get("/api/me", protectedRoute, getMe);
 router.get("/api/users", protectedRoute, getAllUsers);
 router.get("/api/admin/dashboard", protectedRoute, adminOnly, getAdminDashboard);
+router.post("/api/teams", protectedRoute, createTeam);
+router.post("/api/teams/:teamId/members", protectedRoute, addTeamMember);
+router.delete("/api/teams/:teamId/members/:memberId", protectedRoute, removeTeamMember);
+router.get(
+	"/api/users/without-team",
+	protectedRoute,
+	adminOnly,
+	getUsersWithoutTeam,
+);
+router.get("/api/teams/:teamId/members", protectedRoute, getTeamMembers);
 
+<<<<<<< HEAD
 router.post("/api/tasks", protectedRoute, createTask);
 router.get("/api/tasks", protectedRoute, getAllTasks);
 router.get("/api/tasks/:id", protectedRoute, getTaskById);
@@ -33,3 +47,6 @@ router.post("/api/notes/refine", protectedRoute, refineNoteHandler);
 router.get("/api/tasks/:taskId/progress", protectedRoute, getTaskProgress);
 
 export default router;
+=======
+export default router;
+>>>>>>> feature/team-members
