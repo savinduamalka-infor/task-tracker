@@ -11,8 +11,14 @@ import { useTaskStore } from "@/lib/task-store";
 import { taskApi, userApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Table2, Filter } from "lucide-react";
-import { Task, User } from "@/lib/types";
+import { Task, TaskStatus, User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const { currentRole } = useTaskStore();
@@ -24,6 +30,10 @@ const Index = () => {
   const [updateTaskId, setUpdateTaskId] = useState<string | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
   const [showMainOnly, setShowMainOnly] = useState(false);
+  const [blockedDialogOpen, setBlockedDialogOpen] = useState(false);
+  const [blockedReason, setBlockedReason] = useState("");
+  const [pendingDrop, setPendingDrop] = useState<{ taskId: string; newStatus: TaskStatus } | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadTasks();
@@ -83,6 +93,55 @@ const Index = () => {
     setUpdateOpen(true);
   };
 
+  const handleTaskDrop = (taskId: string, newStatus: TaskStatus) => {
+    if (newStatus === "BLOCKED") {
+      setPendingDrop({ taskId, newStatus });
+      setBlockedReason("");
+      setBlockedDialogOpen(true);
+      return;
+    }
+    applyStatusChange(taskId, newStatus);
+  };
+
+  const applyStatusChange = async (taskId: string, newStatus: TaskStatus, reason?: string) => {
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+    );
+
+    try {
+      const updatePayload: any = { status: newStatus };
+      if (reason) {
+        updatePayload.updates = {
+          note: `Status changed to Blocked`,
+          status: newStatus,
+          blockedReason: reason,
+        };
+      }
+      await taskApi.update(taskId, updatePayload);
+      toast({ title: "Status Updated", description: `Task moved to ${newStatus.replace("_", " ")}.` });
+      loadTasks(); // Refresh from server
+    } catch (error) {
+      console.error("Failed to update task status:", error);
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      loadTasks(); // Revert by reloading
+    }
+  };
+
+  const handleBlockedConfirm = () => {
+    if (!pendingDrop || !blockedReason.trim()) return;
+    setBlockedDialogOpen(false);
+    applyStatusChange(pendingDrop.taskId, pendingDrop.newStatus, blockedReason.trim());
+    setPendingDrop(null);
+    setBlockedReason("");
+  };
+
+  const handleBlockedCancel = () => {
+    setBlockedDialogOpen(false);
+    setPendingDrop(null);
+    setBlockedReason("");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -114,7 +173,7 @@ const Index = () => {
             </Button>
           </div>
           <TabsContent value="board" className="mt-4">
-            <TaskBoard onTaskClick={openTaskDetail} tasks={filteredTasks} users={users} />
+            <TaskBoard onTaskClick={openTaskDetail} tasks={filteredTasks} users={users} onTaskDrop={handleTaskDrop} />
           </TabsContent>
           <TabsContent value="table" className="mt-4">
             <TaskTable onTaskClick={openTaskDetail} tasks={filteredTasks} />
@@ -149,6 +208,36 @@ const Index = () => {
         onClose={() => setUpdateOpen(false)}
         onSuccess={loadTasks}
       />
+
+      {/* Blocked Reason Dialog */}
+      <Dialog open={blockedDialogOpen} onOpenChange={(o) => { if (!o) handleBlockedCancel(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Why is this task blocked?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="blockedReason">Blocked Reason</Label>
+            <Textarea
+              id="blockedReason"
+              placeholder="Describe why this task is blocked..."
+              value={blockedReason}
+              onChange={(e) => setBlockedReason(e.target.value)}
+              rows={3}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleBlockedCancel}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={!blockedReason.trim()}
+              onClick={handleBlockedConfirm}
+            >
+              Mark as Blocked
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
