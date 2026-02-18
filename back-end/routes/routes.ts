@@ -29,7 +29,6 @@ router.get(
 );
 router.get("/api/teams/:teamId/members", protectedRoute, getTeamMembers);
 
-<<<<<<< HEAD
 router.post("/api/tasks", protectedRoute, createTask);
 router.get("/api/tasks", protectedRoute, getAllTasks);
 router.get("/api/tasks/:id", protectedRoute, getTaskById);
@@ -47,6 +46,3 @@ router.post("/api/notes/refine", protectedRoute, refineNoteHandler);
 router.get("/api/tasks/:taskId/progress", protectedRoute, getTaskProgress);
 
 export default router;
-=======
-export default router;
->>>>>>> feature/team-members
