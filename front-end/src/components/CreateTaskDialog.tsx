@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { taskApi, userApi } from "@/lib/api";
+import { taskApi, teamApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { TaskPriority } from "@/lib/types";
 import { useTaskStore } from "@/lib/task-store";
@@ -72,22 +72,28 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
       if (isMember) {
         setUsers([{ _id: currentUser.id, name: "Assign to me" }]);
         setValue("assigneeId", currentUser.id);
-      } else {
-        userApi.getAll()
+      } else if (currentUser.teamId) {
+        teamApi.getMembers(currentUser.teamId)
           .then((res) => {
-            setUsers(res.data || []);
+            const members = (res.data?.members || []).map((m: any) => ({
+              _id: String(m._id),
+              name: m.name,
+            }));
+            setUsers(members);
           })
           .catch(err => {
-            console.error("Failed to load users:", err);
+            console.error("Failed to load team members:", err);
             toast({
               title: "Error",
-              description: "Failed to load users",
+              description: "Failed to load team members",
               variant: "destructive",
             });
           });
+      } else {
+        setUsers([]);
       }
     }
-  }, [open, isMember, currentUser.id, setValue, toast]);
+  }, [open, isMember, currentUser.id, currentUser.teamId, setValue, toast]);
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -100,7 +106,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
         priority: data.priority as TaskPriority,
         startDate: data.startDate,
         dueDate: data.dueDate,
-        teamId: "000000000000000000000000", // Temporary until team module is ready
+        teamId: currentUser.teamId || "",
       });
       toast({
         title: "Success",

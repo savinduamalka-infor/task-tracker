@@ -1,9 +1,22 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { TaskModel } from "../models/task.model.js";
 
 export async function createTask(req: Request, res: Response) {
   try {
     const user = req.user!;
+
+    const db = mongoose.connection.db!;
+    const dbUser = await db.collection("user").findOne(
+      { _id: new mongoose.Types.ObjectId(user.id) },
+      { projection: { teamId: 1 } }
+    );
+    const teamId = dbUser?.teamId || user.teamId;
+
+    if (!teamId) {
+      res.status(400).json({ error: "You must belong to a team before creating tasks" });
+      return;
+    }
 
     if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
       res.status(403).json({ error: "Members can only assign tasks to themselves" });
@@ -12,6 +25,7 @@ export async function createTask(req: Request, res: Response) {
 
     const task = await TaskModel.create({
       ...req.body,
+      teamId,
       assigneeId: user.role === "Member" ? user.id : req.body.assigneeId,
       reporterId: user.id,
     });
@@ -24,8 +38,25 @@ export async function createTask(req: Request, res: Response) {
 
 export async function getAllTasks(req: Request, res: Response) {
   try {
+    const user = req.user!;
     const { mainOnly } = req.query;
+
+    const db = mongoose.connection.db!;
+    const dbUser = await db.collection("user").findOne(
+      { _id: new mongoose.Types.ObjectId(user.id) },
+      { projection: { teamId: 1 } }
+    );
+    const teamId = dbUser?.teamId || user.teamId;
+
     const filter: any = {};
+    if (teamId) {
+      filter.teamId = teamId;
+    } else {
+      filter.$or = [
+        { assigneeId: user.id },
+        { reporterId: user.id },
+      ];
+    }
     if (mainOnly === "true") {
       filter.isSubtask = { $ne: true };
     }

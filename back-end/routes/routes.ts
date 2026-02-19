@@ -10,6 +10,7 @@ import { getTaskProgress } from "../controllers/progress.controller.js";
 
 import {  getUsersWithoutTeam } from "../controllers/user.controller.js";
 import { createTeam, addTeamMember, removeTeamMember, getTeamMembers, getAllTeams, getTeamById, updateTeam, deleteTeam } from "../controllers/team.controller.js";
+import { createJoinRequest, getMyJoinRequests, getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from "../controllers/joinRequest.controller.js";
 const router = Router();
 
 router.get("/api/auth/session", getSession);
@@ -30,6 +31,13 @@ router.get(
 	getUsersWithoutTeam,
 );
 router.get("/api/teams/:teamId/members", protectedRoute, getTeamMembers);
+
+// Join request routes
+router.post("/api/join-requests", protectedRoute, createJoinRequest);
+router.get("/api/join-requests/my", protectedRoute, getMyJoinRequests);
+router.get("/api/join-requests/team/:teamId", protectedRoute, getTeamJoinRequests);
+router.put("/api/join-requests/:requestId/accept", protectedRoute, acceptJoinRequest);
+router.put("/api/join-requests/:requestId/reject", protectedRoute, rejectJoinRequest);
 
 router.post("/api/tasks", protectedRoute, createTask);
 router.get("/api/tasks", protectedRoute, getAllTasks);
