@@ -192,6 +192,19 @@ const Index = () => {
   };
 
   const handleTaskDrop = (taskId: string, newStatus: TaskStatus) => {
+    const task = tasks.find((t) => t.id === taskId);
+    const isAssignee = task?.assigneeId === currentUser.id;
+    const isLead = currentRole === "Lead";
+
+    if (!isAssignee && !isLead) {
+      toast({
+        title: "Permission Denied",
+        description: "Only the task assignee or a Lead can change the task status.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (newStatus === "BLOCKED") {
       setPendingDrop({ taskId, newStatus });
       setBlockedReason("");
