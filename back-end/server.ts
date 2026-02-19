@@ -3,11 +3,11 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import { toNodeHandler } from "better-auth/node";
-
+import app from "./app";
 import { initAuth } from "./config/auth";
 import routes from "./routes/routes";
 
-const app = express();
+//const app = express();
 const PORT = process.env.PORT;
 
 app.use(
@@ -16,7 +16,6 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
 
 async function start() {
   try {
