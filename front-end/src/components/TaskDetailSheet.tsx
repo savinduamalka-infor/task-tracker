@@ -9,17 +9,27 @@ import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2, Trash2, FileText,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import {
+  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2, Trash2, FileText, HandHelping, ChevronsUpDown, Check, UserCheck,
 } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
-import { subtaskApi, taskApi, progressApi } from "@/lib/api";
+import { subtaskApi, taskApi, progressApi, assignRequestApi } from "@/lib/api";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { format, parseISO } from "date-fns";
 import { Task, TaskStatus, User as UserType } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface TaskDetailSheetProps {
   task: Task | null;
@@ -34,7 +44,7 @@ interface TaskDetailSheetProps {
 }
 
 export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSubtaskAdded, onTaskClick, allTasks = [], onDeleteTask }: TaskDetailSheetProps) {
-  const { currentUser } = useTaskStore();
+  const { currentUser, currentRole } = useTaskStore();
   const { toast } = useToast();
   const [suggesting, setSuggesting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -46,6 +56,37 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
   const [selectedSubtaskIndices, setSelectedSubtaskIndices] = useState<Set<number>>(new Set());
   const [addingSubtasks, setAddingSubtasks] = useState(false);
   const [addedSubtaskIndices, setAddedSubtaskIndices] = useState<Set<number>>(new Set());
+
+  // Request Help state
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [helpNote, setHelpNote] = useState("");
+  const [helpSuggestedIds, setHelpSuggestedIds] = useState<Set<string>>(new Set());
+  const [sendingHelp, setSendingHelp] = useState(false);
+
+  // Reassign state
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [reassigneeId, setReassigneeId] = useState("");
+  const [reassigning, setReassigning] = useState(false);
+
+  const handleReassign = async () => {
+    if (!reassigneeId || !task) return;
+    setReassigning(true);
+    try {
+      const newAssignee = users.find(u => u._id === reassigneeId);
+      await taskApi.update(task.id, {
+        assigneeId: reassigneeId,
+        updates: { note: `Task reassigned to ${newAssignee?.name || "new member"} by lead` },
+      });
+      toast({ title: "Task Reassigned", description: `Now assigned to ${newAssignee?.name || reassigneeId}` });
+      setReassignOpen(false);
+      setReassigneeId("");
+      onDeleteTask?.(task.id);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to reassign task", variant: "destructive" });
+    } finally {
+      setReassigning(false);
+    }
+  };
 
   if (!task) return null;
 
@@ -219,6 +260,43 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
     ? allTasks.find((t) => t.id === task.parentTaskId)
     : null;
 
+  const handleSendHelpRequest = async () => {
+    if (!helpNote.trim()) {
+      toast({ title: "Note required", description: "Please explain why you need help.", variant: "destructive" });
+      return;
+    }
+    setSendingHelp(true);
+    try {
+      await assignRequestApi.create({
+        taskId: task.id,
+        suggestedMemberIds: Array.from(helpSuggestedIds),
+        note: helpNote.trim(),
+      });
+      toast({ title: "Request Sent", description: "Your reassignment request has been sent to the team lead." });
+      setHelpDialogOpen(false);
+      setHelpNote("");
+      setHelpSuggestedIds(new Set());
+      onSubtaskAdded?.();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to send request.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingHelp(false);
+    }
+  };
+
+  const toggleHelpMember = (id: string) => {
+    setHelpSuggestedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   // Build unified activity feed: updates + subtask completions integrated
   const allCompletedSubtaskIds = new Set(
     task.updates.flatMap((u) => u.subtaskCompletions ?? [])
@@ -271,6 +349,29 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                 <p className="font-medium">{reporter?.name}</p>
               </div>
             </div>
+            {task.helperIds && task.helperIds.length > 0 && (
+              <div className="flex items-start gap-2 col-span-2">
+                <HandHelping className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Helpers</p>
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    {task.helperIds.map(hid => {
+                      const helper = getUserById(hid);
+                      return helper ? (
+                        <Badge key={hid} variant="secondary" className="text-xs gap-1 py-0">
+                          <Avatar className="h-3.5 w-3.5">
+                            <AvatarFallback className="text-[7px]">
+                              {helper.name.split(" ").map(n => n[0]).join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          {helper.name}
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-muted-foreground" />
               <div>
@@ -288,9 +389,31 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            {task.assigneeId === currentUser.id && (
+            {(task.assigneeId === currentUser.id || task.helperIds?.includes(currentUser.id)) && (
               <Button size="sm" onClick={() => onAddUpdate(task.id)}>
                 <MessageSquarePlus className="mr-1.5 h-4 w-4" /> Add Update
+              </Button>
+            )}
+            {task.assigneeId === currentUser.id && task.status !== "DONE" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setHelpDialogOpen(true)}
+                className="gap-1.5"
+              >
+                <HandHelping className="h-4 w-4" />
+                Request Help
+              </Button>
+            )}
+            {currentRole === "Lead" && task.status !== "DONE" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setReassignOpen(true); setReassigneeId(""); }}
+                className="gap-1.5"
+              >
+                <UserCheck className="h-4 w-4" />
+                Reassign
               </Button>
             )}
             <Button
@@ -313,6 +436,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
               <FileText className="h-4 w-4" />
               {progressLoading ? "Generating..." : "Progress Report"}
             </Button>
+            {currentRole === "Lead" && (
             <Button
               size="icon"
               variant="ghost"
@@ -327,6 +451,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                 <Trash2 className="h-4 w-4" />
               )}
             </Button>
+            )}
           </div>
 
           {/* Suggested Subtask Progress */}
@@ -444,6 +569,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                         </div>
                         <StatusBadge status={st.status} />
                       </button>
+                      {currentRole === "Lead" && (
                       <button
                         onClick={(e) => handleDeleteSubtask(st.id, e)}
                         disabled={deletingSubtaskId === st.id}
@@ -456,6 +582,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                           <Trash2 className="h-3.5 w-3.5" />
                         )}
                       </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -549,6 +676,170 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
           ) : (
             <p className="text-sm text-muted-foreground py-4">No progress report available.</p>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={reassignOpen} onOpenChange={(o) => { if (!o) { setReassignOpen(false); setReassigneeId(""); } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <UserCheck className="h-4 w-4 text-primary" />
+              Reassign Task
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Change the assignee of <span className="font-medium text-foreground">"{task.title}"</span>.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">New Assignee</Label>
+              <Select value={reassigneeId} onValueChange={setReassigneeId}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select a member..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {users
+                    .filter(u => u._id !== task.assigneeId)  // exclude current assignee
+                    .map((u) => (
+                    <SelectItem key={u._id} value={u._id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5 shrink-0">
+                          <AvatarFallback className="text-[8px]">
+                            {u.name.split(" ").map(n => n[0]).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{u.name}</span>
+                        {u.jobTitle && (
+                          <span className="text-xs text-muted-foreground">({u.jobTitle})</span>
+                        )}
+
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => { setReassignOpen(false); setReassigneeId(""); }}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleReassign}
+              disabled={reassigning || !reassigneeId || reassigneeId === task.assigneeId}
+              className="gap-1.5"
+            >
+              {reassigning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />}
+              {reassigning ? "Reassigning..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={helpDialogOpen} onOpenChange={(o) => { if (!o) { setHelpDialogOpen(false); setHelpNote(""); setHelpSuggestedIds(new Set()); } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <HandHelping className="h-4 w-4 text-primary" />
+              Request Help
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Ask the lead to assign someone new to{" "}
+              <span className="font-medium text-foreground">"{task.title}"</span>.
+            </p>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">
+                Suggest members{" "}
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full justify-between font-normal h-9">
+                    {helpSuggestedIds.size > 0
+                      ? `${helpSuggestedIds.size} member${helpSuggestedIds.size > 1 ? "s" : ""} selected`
+                      : "Select members to suggest..."}
+                    <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search members..." className="h-8" />
+                    <CommandList>
+                      <CommandEmpty>No members found.</CommandEmpty>
+                      <CommandGroup>
+                        {users
+                          .filter(u =>
+                            u._id !== currentUser.id &&          // not the requester
+                            u._id !== task.assigneeId &&         // not the primary assignee
+                            !task.helperIds?.includes(u._id)     // not already a helper
+                          )
+                          .map((u) => (
+                          <CommandItem
+                            key={u._id}
+                            value={u.name}
+                            onSelect={() => toggleHelpMember(u._id)}
+                            className="gap-2"
+                          >
+                            <Check className={cn("h-3.5 w-3.5 shrink-0", helpSuggestedIds.has(u._id) ? "opacity-100" : "opacity-0")} />
+                            <Avatar className="h-5 w-5 shrink-0">
+                              <AvatarFallback className="text-[8px]">
+                                {u.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{u.name}</span>
+                            {(u.jobTitle || u.role) && (
+                              <span className="ml-auto text-xs text-muted-foreground">{u.jobTitle || u.role}</span>
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {helpSuggestedIds.size > 0 && (
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {users.filter(u => helpSuggestedIds.has(u._id)).map(u => (
+                    <Badge
+                      key={u._id}
+                      variant="secondary"
+                      className="text-xs gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      onClick={() => toggleHelpMember(u._id)}
+                    >
+                      {u.name} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="helpNote" className="text-xs font-medium">
+                Note to lead <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="helpNote"
+                value={helpNote}
+                onChange={(e) => setHelpNote(e.target.value)}
+                placeholder="Explain why you need help on this task..."
+                rows={3}
+                className="resize-none text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => { setHelpDialogOpen(false); setHelpNote(""); setHelpSuggestedIds(new Set()); }}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSendHelpRequest} disabled={sendingHelp} className="gap-1.5">
+              {sendingHelp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <HandHelping className="h-3.5 w-3.5" />}
+              {sendingHelp ? "Sending..." : "Send Request"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Sheet>

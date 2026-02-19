@@ -120,7 +120,7 @@ export default function TeamMembers() {
     }
   };
 
-  const canManage = currentUser?.teamId ? currentUser.role === "Admin" || currentUser.role === "Lead" : false;
+  const canManage = currentUser?.teamId ? currentUser.role === "Lead" : false;
 
     return (
         <div className="min-h-screen p-6">

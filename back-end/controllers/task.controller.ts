@@ -1,11 +1,22 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { TaskModel } from "../models/task.model.js";
 
 export async function createTask(req: Request, res: Response) {
   try {
     const user = req.user!;
 
-    console.log("Create task request by user:", user.id, "with role:", user.role);
+    const db = mongoose.connection.db!;
+    const dbUser = await db.collection("user").findOne(
+      { _id: new mongoose.Types.ObjectId(user.id) },
+      { projection: { teamId: 1 } }
+    );
+    const teamId = dbUser?.teamId || user.teamId;
+
+    if (!teamId) {
+      res.status(400).json({ error: "You must belong to a team before creating tasks" });
+      return;
+    }
 
     if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
       res.status(403).json({ error: "Members can only assign tasks to themselves" });
@@ -14,6 +25,7 @@ export async function createTask(req: Request, res: Response) {
 
     const task = await TaskModel.create({
       ...req.body,
+      teamId,
       assigneeId: user.role === "Member" ? user.id : req.body.assigneeId,
       reporterId: user.id,
     });
@@ -26,8 +38,26 @@ export async function createTask(req: Request, res: Response) {
 
 export async function getAllTasks(req: Request, res: Response) {
   try {
+    const user = req.user!;
     const { mainOnly } = req.query;
+
+    const db = mongoose.connection.db!;
+    const dbUser = await db.collection("user").findOne(
+      { _id: new mongoose.Types.ObjectId(user.id) },
+      { projection: { teamId: 1 } }
+    );
+    const teamId = dbUser?.teamId || user.teamId;
+
     const filter: any = {};
+    if (teamId) {
+      filter.teamId = teamId;
+    } else {
+      filter.$or = [
+        { assigneeId: user.id },
+        { reporterId: user.id },
+        { helperIds: user.id },
+      ];
+    }
     if (mainOnly === "true") {
       filter.isSubtask = { $ne: true };
     }
@@ -56,11 +86,33 @@ export async function getTaskById(req: Request, res: Response) {
 export async function updateTask(req: Request, res: Response) {
   try {
     const { updates, ...updateData } = req.body;
+
+    // Only Lead can change the assignee
+    if (updateData.assigneeId !== undefined) {
+      const role = req.user!.role;
+      if (role !== "Lead") {
+        res.status(403).json({ error: "Only a Lead can reassign a task" });
+        return;
+      }
+    }
     
     let task;
     if (updates) {
       if (!updates.note || typeof updates.note !== "string" || !updates.note.trim()) {
         res.status(400).json({ error: "Update note is required" });
+        return;
+      }
+
+      const targetTask = await TaskModel.findById(req.params.id);
+      if (!targetTask) {
+        res.status(404).json({ error: "Task not found" });
+        return;
+      }
+      const userId = req.user!.id;
+      const isAssignee = String(targetTask.assigneeId) === userId;
+      const isHelper = (targetTask.helperIds || []).map(String).includes(userId);
+      if (!isAssignee && !isHelper) {
+        res.status(403).json({ error: "Only the assignee or a helper can add updates to this task" });
         return;
       }
 
@@ -101,6 +153,11 @@ export async function updateTask(req: Request, res: Response) {
 
 export async function deleteTask(req: Request, res: Response) {
   try {
+    if (req.user!.role !== "Lead") {
+      res.status(403).json({ error: "Only a Lead can delete tasks" });
+      return;
+    }
+
     const task = await TaskModel.findByIdAndDelete(req.params.id);
     if (!task) {
       res.status(404).json({ error: "Task not found" });

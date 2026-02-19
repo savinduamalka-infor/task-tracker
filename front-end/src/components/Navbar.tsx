@@ -1,7 +1,6 @@
 import { Moon, Sun, ChevronDown, LogOut, ClipboardList } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
-import { Users } from "lucide-react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +57,7 @@ export function Navbar() {
       <div className="flex h-14 items-center px-4 md:px-6">
         <div className="flex items-center gap-2 mr-auto">
           <ClipboardList className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold tracking-tight">TaskFlow</span>
+          <span className="text-lg font-bold tracking-tight">Task Tracker</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -82,18 +81,6 @@ export function Navbar() {
               </Button>
             </div>
           )}
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/team-members")}
-            className="hidden sm:flex items-center gap-1"
-          >
-            <Users className="h-4 w-4" />
-            Team 
-          </Button>
-
-
 
           {/* Theme Toggle */}
           <Button

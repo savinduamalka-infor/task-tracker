@@ -6,12 +6,10 @@ import mongoose from "mongoose";
 // controllers/team.controller.ts
 export const createTeam = async (req: Request, res: Response) => {
   try {
-    console.log("Request received");
-    const { name, description, members = [] } = req.body; // ← accept members
+    const { name, description } = req.body;
     const user = (req as any).user;
 
     if (!user) {
-      console.log("Unauthorized request");
       return res.status(401).json({ message: "Unauthorized" });
     }
 
@@ -32,38 +30,15 @@ export const createTeam = async (req: Request, res: Response) => {
       members: [user.id],
     });
 
-    // 2. Handle initial members (if provided)
-    if (members.length > 0) {
-      for (const m of members) {
-        if (!m.name?.trim() || !m.jobTitle?.trim()) continue;
-
-        // Check if user with this name already exists (very basic check)
-        // In real apps → better to use email or unique identifier
-        let teamMember = await User.findOne({ name: m.name });
-
-        if (!teamMember) {
-          teamMember = new User({
-            name: m.name,
-            jobTitle: m.jobTitle,
-        
-            role: "Member",           
-            isActive: false,          
-            teamId: team._id,
-          });
-
-          await teamMember.save();
-        }
-
-        // Add to team only if not already there
-        if (!team.members.includes(teamMember._id.toString())) {
-          team.members.push(teamMember._id.toString());
-        }
-      }
-    }
-
     await team.save();
-    console.log(`team created with ID: ${team._id}`);
-    console.log(`Total team members: ${team.members.length}`);
+
+    // Use raw MongoDB driver because better-auth stores _id as ObjectId
+    // but the Mongoose User model defines _id as String, causing a mismatch
+    const db = mongoose.connection.db!;
+    await db.collection("user").updateOne(
+      { _id: new mongoose.Types.ObjectId(user.id) },
+      { $set: { teamId: team._id.toString() } }
+    );
 
     res.status(201).json({
       message: "Team created successfully",
@@ -78,37 +53,24 @@ export const createTeam = async (req: Request, res: Response) => {
 export const getTeamMembers = async (req: Request, res: Response) => {
   try {
     const { teamId } = req.params as any;
-
     const user = (req as any).user;
+
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
     const team = await Team.findById(teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    
-// console.log("=== MODEL & COLLECTION DIAGNOSTIC ===");
-// console.log("Model name:            ", User.modelName);
-// console.log("Collection name:       ", User.collection?.name || "undefined");
-// console.log("Mongoose connection DB:", User.db.name || mongoose.connection.name || "unknown");
-// console.log("Team members IDs:      ", team.members);
-// console.log("Team members types:    ", team.members.map(id => typeof id));
-// console.log("Team members count:    ", team.members.length);
-// console.log("=== END DIAGNOSTIC ===");
-
-    // allow if requester is Admin, team creator, or a member of the team
     const isMember = team.members.includes(user.id);
-    if (user.role !== "Admin" && team.createdBy !== user.id && !isMember) {
+    if (user.role !== "Lead" && team.createdBy !== user.id && !isMember) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const members = await User.find({ _id: { $in: team.members } }).select(
-      "_id name email role teamId jobTitle isActive createdAt updatedAt",
-    );
-    console.log("team.members:", team.members);
-    console.log("req.user:", user);
-
-    console.log("Found members count:", members.length);
-    console.log("Found _ids:         ", members.map(u => u._id));
+    const db = mongoose.connection.db!;
+    const memberObjectIds = team.members.map((m: string) => new mongoose.Types.ObjectId(m));
+    const members = await db.collection("user").find(
+      { _id: { $in: memberObjectIds } },
+      { projection: { _id: 1, name: 1, email: 1, role: 1, teamId: 1, jobTitle: 1, isActive: 1, createdAt: 1, updatedAt: 1 } }
+    ).toArray();
 
     res.status(200).json({ teamId: team._id, teamName: team.name, members });
   } catch (error) {
@@ -126,11 +88,14 @@ export const addTeamMember = async (req: Request, res: Response) => {
 
     if (!memberId) return res.status(400).json({ message: "memberId is required" });
 
+    if (!mongoose.Types.ObjectId.isValid(teamId)) {
+      return res.status(400).json({ message: "Invalid team ID" });
+    }
+
     const team = await Team.findById(teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    // only admin or team creator can add members
-    if (user.role !== "Admin" && team.createdBy !== user.id) {
+    if (user.role !== "Lead" && team.createdBy !== user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -140,9 +105,23 @@ export const addTeamMember = async (req: Request, res: Response) => {
 
     team.members.push(memberId);
     await team.save();
-    await User.findByIdAndUpdate(memberId, { teamId });
-    res.status(200).json({ message: "Member added", team });
+
+    const db = mongoose.connection.db!;
+    await db.collection("user").updateOne(
+      { _id: new mongoose.Types.ObjectId(memberId) },
+      { $set: { teamId: teamId.toString() } }
+    );
+    
+    const db2 = mongoose.connection.db!;
+    const updatedMemberOids = team.members.map((m: string) => new mongoose.Types.ObjectId(m));
+    const updatedMembers = await db2.collection("user").find(
+      { _id: { $in: updatedMemberOids } },
+      { projection: { _id: 1, name: 1, email: 1, role: 1, teamId: 1, jobTitle: 1, isActive: 1 } }
+    ).toArray();
+    
+    res.status(200).json({ message: "Member added", team, members: updatedMembers });
   } catch (error) {
+    console.error("Add member error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
@@ -157,8 +136,7 @@ export const removeTeamMember = async (req: Request, res: Response) => {
     const team = await Team.findById(teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    // only admin or team creator can remove members
-    if (user.role !== "Admin" && team.createdBy !== user.id) {
+    if (user.role !== "Lead" && team.createdBy !== user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -168,12 +146,101 @@ export const removeTeamMember = async (req: Request, res: Response) => {
 
     team.members = team.members.filter((m: string) => m !== memberId);
     await team.save();
-    await User.findByIdAndUpdate(memberId, { 
-      $set: { teamId: null } 
-    });
+
+    const db = mongoose.connection.db!;
+    await db.collection("user").updateOne(
+      { _id: new mongoose.Types.ObjectId(memberId) },
+      { $set: { teamId: null } }
+    );
 
     res.status(200).json({ message: "Member removed", team });
   } catch (error) {
+    console.error("Remove member error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const getAllTeams = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+    const teams = await Team.find();
+    res.status(200).json({ teams });
+  } catch (error) {
+    console.error("Get teams error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const getTeamById = async (req: Request, res: Response) => {
+  try {
+    const { teamId } = req.params;
+    const user = (req as any).user;
+
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    res.status(200).json({ team });
+  } catch (error) {
+    console.error("Get team error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const updateTeam = async (req: Request, res: Response) => {
+  try {
+    const { teamId } = req.params;
+    const { name, description } = req.body;
+    const user = (req as any).user;
+
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    if (user.role !== "Lead" && team.createdBy !== user.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    if (name) team.name = name;
+    if (description !== undefined) team.description = description;
+
+    await team.save();
+    res.status(200).json({ message: "Team updated", team });
+  } catch (error) {
+    console.error("Update team error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const deleteTeam = async (req: Request, res: Response) => {
+  try {
+    const { teamId } = req.params;
+    const user = (req as any).user;
+
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    if (user.role !== "Lead" && team.createdBy !== user.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const db = mongoose.connection.db!;
+    const memberObjectIds = team.members.map((m: string) => new mongoose.Types.ObjectId(m));
+    await db.collection("user").updateMany(
+      { _id: { $in: memberObjectIds } },
+      { $set: { teamId: null } }
+    );
+
+    await Team.findByIdAndDelete(teamId);
+    res.status(200).json({ message: "Team deleted successfully" });
+  } catch (error) {
+    console.error("Delete team error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };

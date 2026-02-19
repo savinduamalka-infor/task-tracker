@@ -17,7 +17,9 @@ interface MemberDashboardProps {
 export function MemberDashboard({ onQuickUpdate, onTaskClick, tasks }: MemberDashboardProps) {
   const { currentUser } = useTaskStore();
 
-  const myTasks = tasks.filter((t) => t.assigneeId === currentUser.id);
+  const myTasks = tasks.filter(
+    (t) => t.assigneeId === currentUser.id || t.helperIds?.includes(currentUser.id)
+  );
   const doneTasks = myTasks.filter((t) => t.status === "DONE").length;
   const total = myTasks.length;
   const progress = total > 0 ? Math.round((doneTasks / total) * 100) : 0;
@@ -51,7 +53,7 @@ export function MemberDashboard({ onQuickUpdate, onTaskClick, tasks }: MemberDas
           <CardContent className="py-12 text-center">
             <Inbox className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
             <p className="font-medium">All caught up!</p>
-            <p className="text-sm text-muted-foreground">You have no active tasks assigned.</p>
+            <p className="text-sm text-muted-foreground">You have no active tasks assigned or helping with.</p>
           </CardContent>
         </Card>
       ) : (
@@ -74,9 +76,12 @@ export function MemberDashboard({ onQuickUpdate, onTaskClick, tasks }: MemberDas
                       </span>
                       {overdue && <Badge variant="destructive" className="text-xs">Overdue</Badge>}
                       {urgent && !overdue && <Badge className="bg-amber-500 text-white text-xs">Due Soon</Badge>}
+                      {task.helperIds?.includes(currentUser.id) && task.assigneeId !== currentUser.id && (
+                        <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400">Helper</Badge>
+                      )}
                     </div>
                   </div>
-                  {task.assigneeId === currentUser.id && (
+                  {(task.assigneeId === currentUser.id || task.helperIds?.includes(currentUser.id)) && (
                     <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onQuickUpdate(task.id); }}>
                       <MessageSquarePlus className="h-4 w-4 mr-1" /> Update
                     </Button>

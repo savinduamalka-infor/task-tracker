@@ -22,7 +22,7 @@ export async function getTaskProgress(req: Request, res: Response) {
       const parent = await TaskModel.findById(task.parentTaskId).lean();
       if (parent) {
         mainTask = parent;
-        subtasks = await TaskModel.find({ parentTaskId: parent._id }).lean();
+        subtasks = await TaskModel.find({ parentTaskId: parent._id.toString() }).lean();
       }
     } else {
       // If clicked task is main task, get all its subtasks

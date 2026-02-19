@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { ClipboardList } from "lucide-react";
 
 const signupSchema = z
   .object({
@@ -72,8 +73,7 @@ export default function Signup() {
           title: "Account Created",
           description: "Your account has been created successfully. Please log in.",
         });
-        //navigate("/login");
-        navigate("/create-team");
+        navigate("/login");
       }
     } catch (error) {
       const errorMessage =
@@ -93,6 +93,10 @@ export default function Signup() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <ClipboardList className="h-6 w-6 text-primary" />
+          <span className="text-xl font-bold tracking-tight">Task Tracker</span>
+        </div>
         <Card>
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl">Create Account</CardTitle>

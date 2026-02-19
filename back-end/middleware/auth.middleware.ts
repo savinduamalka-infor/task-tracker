@@ -10,7 +10,7 @@ export interface SessionUser {
   image?: string | null;
   createdAt: Date;
   updatedAt: Date;
-  role: "Admin" | "Lead" | "Member";
+  role: "Lead" | "Member";
   teamId?: string;
   jobTitle?: string;
   isActive: boolean;
@@ -47,14 +47,4 @@ export async function protectedRoute(
   }
 }
 
-export function adminOnly(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
-  if (!req.user || req.user.role !== "Admin") {
-    res.status(403).json({ error: "Forbidden: Admin access required" });
-    return;
-  }
-  next();
-}
+
