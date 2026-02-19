@@ -5,6 +5,8 @@ export async function createTask(req: Request, res: Response) {
   try {
     const user = req.user!;
 
+    console.log("Create task request by user:", user.id, "with role:", user.role);
+
     if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
       res.status(403).json({ error: "Members can only assign tasks to themselves" });
       return;
