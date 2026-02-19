@@ -55,6 +55,7 @@ export async function getAllTasks(req: Request, res: Response) {
       filter.$or = [
         { assigneeId: user.id },
         { reporterId: user.id },
+        { helperIds: user.id },
       ];
     }
     if (mainOnly === "true") {
@@ -85,6 +86,15 @@ export async function getTaskById(req: Request, res: Response) {
 export async function updateTask(req: Request, res: Response) {
   try {
     const { updates, ...updateData } = req.body;
+
+    // Only Lead / Admin can change the assignee
+    if (updateData.assigneeId !== undefined) {
+      const role = req.user!.role;
+      if (role !== "Lead" && role !== "Admin") {
+        res.status(403).json({ error: "Only a Lead or Admin can reassign a task" });
+        return;
+      }
+    }
     
     let task;
     if (updates) {
