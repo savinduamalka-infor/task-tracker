@@ -8,22 +8,28 @@ import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
-import { taskApi, userApi } from "@/lib/api";
+import { taskApi, userApi, authApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutGrid, Table2, Filter } from "lucide-react";
+import { LayoutGrid, Table2, Filter, Users, UserPlus, Trash2, Plus } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Task, TaskStatus, User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import axios from "axios";
 
 
 
 const Index = () => {
-  const { currentRole } = useTaskStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentRole, currentUser, setCurrentUser } = useTaskStore();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -32,20 +38,67 @@ const Index = () => {
   const [updateTaskId, setUpdateTaskId] = useState<string | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
   const [showMainOnly, setShowMainOnly] = useState(false);
+  const [showTeamMembers, setShowTeamMembers] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [teamName, setTeamName] = useState("");
   const [blockedDialogOpen, setBlockedDialogOpen] = useState(false);
   const [blockedReason, setBlockedReason] = useState("");
   const [pendingDrop, setPendingDrop] = useState<{ taskId: string; newStatus: TaskStatus } | null>(null);
+  const [activeTab, setActiveTab] = useState("board");
+  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   const { toast } = useToast();
+
+  // Inline team creation state
+  const [createTeamDialogOpen, setCreateTeamDialogOpen] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamDescription, setNewTeamDescription] = useState("");
+  const [creatingTeam, setCreatingTeam] = useState(false);
 
   useEffect(() => {
     loadTasks();
     loadUsers();
+    loadTeamMembers();
   }, []);
+
+  // Re-load team members whenever currentUser.teamId changes (e.g. after team creation)
+  useEffect(() => {
+    if (currentUser?.teamId) {
+      loadTeamMembers();
+    }
+  }, [currentUser?.teamId]);
+
+  // Auto-switch to the Team tab when coming from the create-team page
+  useEffect(() => {
+    if ((location.state as any)?.showTeamTab) {
+      setActiveTab("team");
+      // Clear the state so refreshing doesn't keep switching to team tab
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const loadUsers = () => {
     userApi.getAll()
       .then(res => setUsers(res.data))
       .catch(err => console.error("Failed to load users:", err));
+  };
+
+  const loadTeamMembers = async () => {
+    if (!currentUser?.teamId) return;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`,
+        { credentials: "include" }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setTeamMembers(data.members || []);
+        setTeamName(data.teamName || "");
+      }
+    } catch (err) {
+      console.error("Failed to load team members:", err);
+    }
   };
 
   const loadTasks = useCallback(() => {
@@ -143,6 +196,114 @@ const Index = () => {
     setBlockedReason("");
   };
 
+  const handleAddMember = async () => {
+    if (!selectedUserId) {
+      toast({ title: "Error", description: "Please select a user", variant: "destructive" });
+      return;
+    }
+    if (!currentUser?.teamId) {
+      toast({ title: "Error", description: "You must create or join a team first", variant: "destructive" });
+      return;
+    }
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId: selectedUserId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "Success", description: "Member added successfully" });
+        // Use returned members for instant update, then also refresh
+        if (data.members) {
+          setTeamMembers(data.members);
+        }
+        setSelectedUserId("");
+        setAddMemberDialogOpen(false);
+        await loadTeamMembers();
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to add member", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Add member error:", err);
+      toast({ title: "Error", description: "Failed to add member", variant: "destructive" });
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!currentUser?.teamId) return;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members/${memberId}`,
+        { method: "DELETE", credentials: "include" }
+      );
+      if (res.ok) {
+        toast({ title: "Success", description: "Member removed successfully" });
+        loadTeamMembers();
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to remove member", variant: "destructive" });
+    }
+  };
+
+  const loadAvailableUsers = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/without-team`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableUsers(data.users || []);
+      }
+    } catch (err) {
+      console.error("Failed to load available users:", err);
+    }
+  };
+
+  const handleCreateTeam = async () => {
+    if (!newTeamName.trim()) {
+      toast({ title: "Validation Error", description: "Team name is required", variant: "destructive" });
+      return;
+    }
+    setCreatingTeam(true);
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/teams`,
+        { name: newTeamName.trim(), description: newTeamDescription.trim() },
+        { withCredentials: true }
+      );
+
+      if (res.data?.team) {
+        // Refresh session to get updated teamId
+        const sessionRes = await authApi.getSession();
+        if (sessionRes.data?.user) {
+          setCurrentUser({
+            _id: sessionRes.data.user.id,
+            id: sessionRes.data.user.id,
+            email: sessionRes.data.user.email,
+            name: sessionRes.data.user.name,
+            role: sessionRes.data.user.role,
+            teamId: sessionRes.data.user.teamId || res.data.team._id,
+            jobTitle: sessionRes.data.user.jobTitle || "",
+            isActive: sessionRes.data.user.isActive,
+            lastUpdateSubmitted: sessionRes.data.user.lastUpdateSubmitted || null,
+            avatar: sessionRes.data.user.image,
+          });
+        }
+        toast({ title: "Team Created", description: `"${newTeamName.trim()}" has been created successfully.` });
+        setCreateTeamDialogOpen(false);
+        setNewTeamName("");
+        setNewTeamDescription("");
+      }
+    } catch (err: any) {
+      console.error("Create team failed", err);
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to create team.", variant: "destructive" });
+    } finally {
+      setCreatingTeam(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -153,7 +314,7 @@ const Index = () => {
           <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} tasks={tasks} />
         )}
 
-        <Tabs defaultValue="board">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <TabsList>
               <TabsTrigger value="board" className="gap-1.5">
@@ -161,6 +322,9 @@ const Index = () => {
               </TabsTrigger>
               <TabsTrigger value="table" className="gap-1.5">
                 <Table2 className="h-4 w-4" /> Table
+              </TabsTrigger>
+              <TabsTrigger value="team" className="gap-1.5">
+                <Users className="h-4 w-4" /> Team
               </TabsTrigger>
             </TabsList>
             <Button
@@ -178,6 +342,69 @@ const Index = () => {
           </TabsContent>
           <TabsContent value="table" className="mt-4">
             <TaskTable onTaskClick={openTaskDetail} tasks={filteredTasks} />
+          </TabsContent>
+          <TabsContent value="team" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">{teamName || "Team Members"}</h3>
+                  <span className="text-sm text-muted-foreground">{teamMembers.length} members</span>
+                </div>
+                {(currentUser.role === "Lead" || currentUser.role === "Admin") && currentUser.teamId && (
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      await loadAvailableUsers();
+                      setAddMemberDialogOpen(true);
+                    }}
+                    className="gap-1.5"
+                  >
+                    <UserPlus className="h-4 w-4" /> Add Member
+                  </Button>
+                )}
+              </div>
+              {!currentUser.teamId ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">You need to create a team first.</p>
+                  <Button onClick={() => setCreateTeamDialogOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" /> Create Team
+                  </Button>
+                </div>
+              ) : teamMembers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No team members found.</p>
+              ) : (
+                <div className="grid gap-3">
+                  {teamMembers.map((member) => (
+                    <div key={member._id} className="border rounded-lg p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-medium">
+                            {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-sm text-muted-foreground">{member.jobTitle || "No title"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">{member.role || "Member"}</span>
+                        {(currentUser.role === "Lead" || currentUser.role === "Admin") && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleRemoveMember(member._id)}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </main>
@@ -211,6 +438,39 @@ const Index = () => {
         onSuccess={loadTasks}
       />
 
+      {/* Add Member Dialog */}
+      <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Team Member</DialogTitle>
+            <DialogDescription>Select a user to add to your team.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>User</Label>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select user..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableUsers.filter(user => user._id !== currentUser.id).map((user) => (
+                  <SelectItem key={user._id} value={user._id}>
+                    {user.name} {user.email && `• ${user.email}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddMemberDialogOpen(false); setSelectedUserId(""); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddMember} disabled={!selectedUserId}>
+              Add Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Blocked Reason Dialog */}
       <Dialog open={blockedDialogOpen} onOpenChange={(o) => { if (!o) handleBlockedCancel(); }}>
         <DialogContent className="sm:max-w-md">
@@ -236,6 +496,45 @@ const Index = () => {
               onClick={handleBlockedConfirm}
             >
               Mark as Blocked
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Team Dialog (inline, no navigation) */}
+      <Dialog open={createTeamDialogOpen} onOpenChange={setCreateTeamDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Your Team</DialogTitle>
+            <DialogDescription>Enter a name and optional description for your new team.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="teamName">Team Name</Label>
+              <Input
+                id="teamName"
+                placeholder="e.g. Engineering Squad"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="teamDesc">Description (optional)</Label>
+              <Input
+                id="teamDesc"
+                placeholder="Brief description of your team"
+                value={newTeamDescription}
+                onChange={(e) => setNewTeamDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCreateTeamDialogOpen(false); setNewTeamName(""); setNewTeamDescription(""); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTeam} disabled={creatingTeam || !newTeamName.trim()}>
+              {creatingTeam ? "Creating..." : "Create Team"}
             </Button>
           </DialogFooter>
         </DialogContent>

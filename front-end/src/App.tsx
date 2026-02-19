@@ -29,7 +29,6 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="*" element={<NotFound />} />
               <Route path="/create-team" element={<CreateTeam />} />
-              <Route path="/team-members" element={<ProtectedRoute><TeamMembers /></ProtectedRoute>} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
