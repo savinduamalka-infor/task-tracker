@@ -20,7 +20,6 @@ vi.mock("../middleware/auth.middleware.js", () => ({
   adminOnly: (req: any, res: any, next: any) => next(),
 }));
 
-
 beforeEach(async () => {
   await Team.deleteMany({});
   await User.deleteMany({});
@@ -165,8 +164,6 @@ it("should return 403 if user is not admin or creator", async () => {
   expect(res.status).toBe(403);
   mockUser = originalUser;
 });
-
-
 
   });
 
