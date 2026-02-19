@@ -14,6 +14,7 @@ export interface CreateTaskDTO {
   startDate: string;
   dueDate: string;
   teamId: string;
+  updates?: { note: string };
 }
 
 export const authApi = {
@@ -65,4 +66,15 @@ export const joinRequestApi = {
 export const teamApi = {
   getAll: () => api.get("/api/teams"),
   getMembers: (teamId: string) => api.get(`/api/teams/${teamId}/members`),
+};
+
+export const assignRequestApi = {
+  create: (data: { taskId: string; suggestedMemberIds?: string[]; note: string }) =>
+    api.post("/api/assign-requests", data),
+  getMine: () => api.get("/api/assign-requests/my"),
+  getForTeam: (teamId: string) => api.get(`/api/assign-requests/team/${teamId}`),
+  approve: (requestId: string, data: { newHelperId: string; resolvedNote?: string }) =>
+    api.put(`/api/assign-requests/${requestId}/approve`, data),
+  reject: (requestId: string, data?: { resolvedNote?: string }) =>
+    api.put(`/api/assign-requests/${requestId}/reject`, data || {}),
 };
