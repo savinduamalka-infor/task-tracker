@@ -436,6 +436,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
               <FileText className="h-4 w-4" />
               {progressLoading ? "Generating..." : "Progress Report"}
             </Button>
+            {currentRole === "Lead" && (
             <Button
               size="icon"
               variant="ghost"
@@ -450,6 +451,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                 <Trash2 className="h-4 w-4" />
               )}
             </Button>
+            )}
           </div>
 
           {/* Suggested Subtask Progress */}
@@ -567,6 +569,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                         </div>
                         <StatusBadge status={st.status} />
                       </button>
+                      {currentRole === "Lead" && (
                       <button
                         onClick={(e) => handleDeleteSubtask(st.id, e)}
                         disabled={deletingSubtaskId === st.id}
@@ -579,6 +582,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                           <Trash2 className="h-3.5 w-3.5" />
                         )}
                       </button>
+                      )}
                     </div>
                   ))}
                 </div>

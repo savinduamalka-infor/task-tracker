@@ -103,6 +103,19 @@ export async function updateTask(req: Request, res: Response) {
         return;
       }
 
+      const targetTask = await TaskModel.findById(req.params.id);
+      if (!targetTask) {
+        res.status(404).json({ error: "Task not found" });
+        return;
+      }
+      const userId = req.user!.id;
+      const isAssignee = String(targetTask.assigneeId) === userId;
+      const isHelper = (targetTask.helperIds || []).map(String).includes(userId);
+      if (!isAssignee && !isHelper) {
+        res.status(403).json({ error: "Only the assignee or a helper can add updates to this task" });
+        return;
+      }
+
       const normalizedUpdate = {
         note: updates.note.trim(),
         blockedReason: updates.blockedReason,
@@ -140,6 +153,11 @@ export async function updateTask(req: Request, res: Response) {
 
 export async function deleteTask(req: Request, res: Response) {
   try {
+    if (req.user!.role !== "Lead") {
+      res.status(403).json({ error: "Only a Lead can delete tasks" });
+      return;
+    }
+
     const task = await TaskModel.findByIdAndDelete(req.params.id);
     if (!task) {
       res.status(404).json({ error: "Task not found" });
