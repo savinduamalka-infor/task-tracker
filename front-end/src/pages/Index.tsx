@@ -8,7 +8,8 @@ import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
-import { taskApi, userApi, authApi, joinRequestApi, teamApi } from "@/lib/api";
+import { taskApi, userApi, authApi, joinRequestApi, teamApi, assignRequestApi } from "@/lib/api";
+import { AssignRequest } from "@/components/dashboard/LeadDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Table2, Filter, Users, UserPlus, Trash2, Plus, Clock, Check, X, Send } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -65,6 +66,9 @@ const Index = () => {
   // Join requests for Lead to review
   const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+
+  // Assign/help requests for Lead to review
+  const [pendingAssignRequests, setPendingAssignRequests] = useState<AssignRequest[]>([]);
 
   useEffect(() => {
     loadTasks();
@@ -138,6 +142,7 @@ const Index = () => {
           summary: t.summary || "",
           description: t.description || "",
           assigneeId: t.assigneeId,
+          helperIds: t.helperIds || [],
           status: t.status,
           priority: t.priority,
           startDate: t.startDate,
@@ -365,6 +370,29 @@ const Index = () => {
     }
   };
 
+  const loadPendingAssignRequests = async () => {
+    if (!currentUser?.teamId) return;
+    try {
+      const res = await assignRequestApi.getForTeam(currentUser.teamId);
+      setPendingAssignRequests(res.data?.requests || []);
+    } catch (err) {
+      console.error("Failed to load pending assign requests:", err);
+    }
+  };
+
+  const handleApproveAssignRequest = async (requestId: string, newHelperId: string, resolvedNote?: string) => {
+    await assignRequestApi.approve(requestId, { newHelperId, resolvedNote });
+    toast({ title: "Helper Added", description: "A helper has been added to the task." });
+    await loadPendingAssignRequests();
+    loadTasks();
+  };
+
+  const handleRejectAssignRequest = async (requestId: string, resolvedNote?: string) => {
+    await assignRequestApi.reject(requestId, { resolvedNote });
+    toast({ title: "Request Rejected", description: "The help request has been declined." });
+    await loadPendingAssignRequests();
+  };
+
   const handleSendJoinRequest = async (teamId: string) => {
     setSendingJoinRequest(teamId);
     try {
@@ -416,6 +444,7 @@ const Index = () => {
     }
     if (currentUser?.teamId && (currentUser.role === "Lead" || currentUser.role === "Admin")) {
       loadPendingJoinRequests();
+      loadPendingAssignRequests();
     }
   }, [currentUser?.teamId, currentUser?.id, currentUser?.role]);
 
@@ -424,7 +453,14 @@ const Index = () => {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {currentRole === "Lead" ? (
-          <LeadDashboard onCreateTask={() => setCreateOpen(true)} tasks={tasks} />
+          <LeadDashboard
+            onCreateTask={() => setCreateOpen(true)}
+            tasks={tasks}
+            assignRequests={pendingAssignRequests}
+            users={users}
+            onApproveRequest={handleApproveAssignRequest}
+            onRejectRequest={handleRejectAssignRequest}
+          />
         ) : (
           <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} tasks={tasks} />
         )}

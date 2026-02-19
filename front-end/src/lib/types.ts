@@ -39,6 +39,7 @@ export interface Task {
   summary: string;
   description: string;
   assigneeId: string;
+  helperIds: string[];
   status: TaskStatus;
   priority: TaskPriority;
   startDate: string;
