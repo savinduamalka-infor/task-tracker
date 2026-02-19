@@ -5,7 +5,15 @@ import { generateDailySummary, DailySummaryTask } from "../services/llm.service.
 
 export async function getDailySummary(req: Request, res: Response) {
   try {
+    const user = req.user!;
     const { date } = req.query;
+
+    const dbConn = mongoose.connection.db!;
+    const dbUser = await dbConn.collection("user").findOne(
+      { _id: new mongoose.Types.ObjectId(user.id) },
+      { projection: { teamId: 1 } }
+    );
+    const teamId = dbUser?.teamId || user.teamId;
 
     const targetDate = date
       ? new Date(date as string)
@@ -16,12 +24,19 @@ export async function getDailySummary(req: Request, res: Response) {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const tasks = await TaskModel.find({
+    const taskFilter: any = {
       $or: [
         { "updates.date": { $gte: startOfDay, $lte: endOfDay } },
         { updatedAt: { $gte: startOfDay, $lte: endOfDay } },
       ],
-    }).lean();
+    };
+    if (teamId) {
+      taskFilter.teamId = teamId;
+    } else {
+      taskFilter.assigneeId = user.id;
+    }
+
+    const tasks = await TaskModel.find(taskFilter).lean();
 
     if (tasks.length === 0) {
       res.json({
