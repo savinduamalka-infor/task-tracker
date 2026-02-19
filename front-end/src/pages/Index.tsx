@@ -8,13 +8,14 @@ import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
-import { taskApi, userApi, authApi } from "@/lib/api";
+import { taskApi, userApi, authApi, joinRequestApi, teamApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutGrid, Table2, Filter, Users, UserPlus, Trash2, Plus } from "lucide-react";
+import { LayoutGrid, Table2, Filter, Users, UserPlus, Trash2, Plus, Clock, Check, X, Send } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Task, TaskStatus, User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -55,6 +56,15 @@ const Index = () => {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDescription, setNewTeamDescription] = useState("");
   const [creatingTeam, setCreatingTeam] = useState(false);
+
+  // Join request state (for Members)
+  const [allTeams, setAllTeams] = useState<any[]>([]);
+  const [myJoinRequests, setMyJoinRequests] = useState<any[]>([]);
+  const [sendingJoinRequest, setSendingJoinRequest] = useState<string | null>(null);
+
+  // Join requests for Lead to review
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
 
   useEffect(() => {
     loadTasks();
@@ -304,6 +314,88 @@ const Index = () => {
     }
   };
 
+  const loadAllTeams = async () => {
+    try {
+      const res = await teamApi.getAll();
+      setAllTeams(res.data?.teams || []);
+    } catch (err) {
+      console.error("Failed to load teams:", err);
+    }
+  };
+
+  const loadMyJoinRequests = async () => {
+    try {
+      const res = await joinRequestApi.getMine();
+      setMyJoinRequests(res.data?.requests || []);
+    } catch (err) {
+      console.error("Failed to load join requests:", err);
+    }
+  };
+
+  const loadPendingJoinRequests = async () => {
+    if (!currentUser?.teamId) return;
+    try {
+      const res = await joinRequestApi.getForTeam(currentUser.teamId);
+      setPendingJoinRequests(res.data?.requests || []);
+    } catch (err) {
+      console.error("Failed to load pending join requests:", err);
+    }
+  };
+
+  const handleSendJoinRequest = async (teamId: string) => {
+    setSendingJoinRequest(teamId);
+    try {
+      await joinRequestApi.create(teamId);
+      toast({ title: "Request Sent", description: "Your join request has been sent to the team lead." });
+      await loadMyJoinRequests();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to send join request.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingJoinRequest(null);
+    }
+  };
+
+  const handleAcceptJoinRequest = async (requestId: string) => {
+    setProcessingRequest(requestId);
+    try {
+      await joinRequestApi.accept(requestId);
+      toast({ title: "Accepted", description: "Member has been added to your team." });
+      await loadPendingJoinRequests();
+      await loadTeamMembers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to accept request.", variant: "destructive" });
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  const handleRejectJoinRequest = async (requestId: string) => {
+    setProcessingRequest(requestId);
+    try {
+      await joinRequestApi.reject(requestId);
+      toast({ title: "Rejected", description: "Join request has been rejected." });
+      await loadPendingJoinRequests();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to reject request.", variant: "destructive" });
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser?.teamId && currentUser?.id) {
+      loadAllTeams();
+      loadMyJoinRequests();
+    }
+    if (currentUser?.teamId && (currentUser.role === "Lead" || currentUser.role === "Admin")) {
+      loadPendingJoinRequests();
+    }
+  }, [currentUser?.teamId, currentUser?.id, currentUser?.role]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -344,64 +436,212 @@ const Index = () => {
             <TaskTable onTaskClick={openTaskDetail} tasks={filteredTasks} />
           </TabsContent>
           <TabsContent value="team" className="mt-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">{teamName || "Team Members"}</h3>
-                  <span className="text-sm text-muted-foreground">{teamMembers.length} members</span>
-                </div>
-                {(currentUser.role === "Lead" || currentUser.role === "Admin") && currentUser.teamId && (
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      await loadAvailableUsers();
-                      setAddMemberDialogOpen(true);
-                    }}
-                    className="gap-1.5"
-                  >
-                    <UserPlus className="h-4 w-4" /> Add Member
-                  </Button>
-                )}
-              </div>
-              {!currentUser.teamId ? (
+            <div className="space-y-6">
+              {currentUser.teamId ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">{teamName || "Team Members"}</h3>
+                      <span className="text-sm text-muted-foreground">{teamMembers.length} members</span>
+                    </div>
+                    {(currentUser.role === "Lead" || currentUser.role === "Admin") && (
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          await loadAvailableUsers();
+                          setAddMemberDialogOpen(true);
+                        }}
+                        className="gap-1.5"
+                      >
+                        <UserPlus className="h-4 w-4" /> Add Member
+                      </Button>
+                    )}
+                  </div>
+
+                  {(currentUser.role === "Lead" || currentUser.role === "Admin") && pendingJoinRequests.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Pending Join Requests ({pendingJoinRequests.length})
+                      </h4>
+                      <div className="grid gap-2">
+                        {pendingJoinRequests.map((req) => (
+                          <div key={req._id} className="border border-dashed border-primary/30 rounded-lg p-4 flex items-center justify-between bg-primary/5">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <span className="text-sm font-medium">
+                                  {req.user?.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium">{req.user?.name || "Unknown"}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {req.user?.jobTitle || "No title"} {req.user?.email && `• ${req.user.email}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleAcceptJoinRequest(req._id)}
+                                disabled={processingRequest === req._id}
+                                className="gap-1.5"
+                              >
+                                <Check className="h-4 w-4" />
+                                {processingRequest === req._id ? "..." : "Accept"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRejectJoinRequest(req._id)}
+                                disabled={processingRequest === req._id}
+                                className="gap-1.5 text-destructive hover:text-destructive"
+                              >
+                                <X className="h-4 w-4" />
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {teamMembers.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No team members found.</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {teamMembers.map((member) => (
+                        <div key={member._id} className="border rounded-lg p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-medium">
+                                {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium">{member.name}</p>
+                              <p className="text-sm text-muted-foreground">{member.jobTitle || "No title"}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">{member.role || "Member"}</span>
+                            {(currentUser.role === "Lead" || currentUser.role === "Admin") && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleRemoveMember(member._id)}
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : currentUser.role === "Lead" || currentUser.role === "Admin" ? (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">You need to create a team first.</p>
                   <Button onClick={() => setCreateTeamDialogOpen(true)} className="gap-2">
                     <Plus className="h-4 w-4" /> Create Team
                   </Button>
                 </div>
-              ) : teamMembers.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No team members found.</p>
               ) : (
-                <div className="grid gap-3">
-                  {teamMembers.map((member) => (
-                    <div key={member._id} className="border rounded-lg p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-medium">
-                            {member.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{member.name}</p>
-                          <p className="text-sm text-muted-foreground">{member.jobTitle || "No title"}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">{member.role || "Member"}</span>
-                        {(currentUser.role === "Lead" || currentUser.role === "Admin") && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleRemoveMember(member._id)}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold">Join a Team</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Send a request to join an available team. The team lead will review your request.
+                    </p>
+                  </div>
+
+                  {myJoinRequests.filter((r) => r.status === "pending").length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Your Pending Requests
+                      </h4>
+                      <div className="grid gap-2">
+                        {myJoinRequests
+                          .filter((r) => r.status === "pending")
+                          .map((r) => (
+                            <div
+                              key={r._id}
+                              className="border rounded-lg p-4 flex items-center justify-between bg-muted/50"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Clock className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{r.teamName}</p>
+                                  <p className="text-sm text-muted-foreground">Waiting for approval</p>
+                                </div>
+                              </div>
+                              <Badge variant="secondary" className="gap-1.5">
+                                <Clock className="h-3 w-3" /> Pending
+                              </Badge>
+                            </div>
+                          ))}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Available Teams
+                    </h4>
+                    {allTeams.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        No teams available. Please wait for a team lead to create a team.
+                      </p>
+                    ) : (
+                      <div className="grid gap-3">
+                        {allTeams.map((team) => {
+                          const hasPending = myJoinRequests.some(
+                            (r) => r.teamId === team._id && r.status === "pending"
+                          );
+                          const wasRejected = myJoinRequests.some(
+                            (r) => r.teamId === team._id && r.status === "rejected"
+                          );
+                          return (
+                            <div
+                              key={team._id}
+                              className="border rounded-lg p-4 flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Users className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{team.name}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {team.description || "No description"} • {team.members?.length || 0} members
+                                  </p>
+                                </div>
+                              </div>
+                              {hasPending ? (
+                                <Badge variant="secondary" className="gap-1.5">
+                                  <Clock className="h-3 w-3" /> Requested
+                                </Badge>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSendJoinRequest(team._id)}
+                                  disabled={sendingJoinRequest === team._id}
+                                  className="gap-1.5"
+                                >
+                                  <Send className="h-4 w-4" />
+                                  {sendingJoinRequest === team._id ? "Sending..." : wasRejected ? "Request Again" : "Request to Join"}
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

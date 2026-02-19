@@ -75,9 +75,8 @@ export default function Login() {
           title: "Login Successful",
           description: `Welcome back, ${response.data.user.name}!`,
         });
-        // Redirect new users without a team to create-team, otherwise to team-members
-        if (!userData.teamId) navigate("/create-team");
-        else navigate("/");
+        // Redirect to home — the dashboard handles team/no-team states
+        navigate("/");
         //navigate("/")
       }
     } catch (error) {

@@ -53,3 +53,15 @@ export const noteApi = {
 export const progressApi = {
   getTaskProgress: (taskId: string) => api.get(`/api/tasks/${taskId}/progress`),
 };
+
+export const joinRequestApi = {
+  create: (teamId: string) => api.post("/api/join-requests", { teamId }),
+  getMine: () => api.get("/api/join-requests/my"),
+  getForTeam: (teamId: string) => api.get(`/api/join-requests/team/${teamId}`),
+  accept: (requestId: string) => api.put(`/api/join-requests/${requestId}/accept`),
+  reject: (requestId: string) => api.put(`/api/join-requests/${requestId}/reject`),
+};
+
+export const teamApi = {
+  getAll: () => api.get("/api/teams"),
+};
