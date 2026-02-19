@@ -4,7 +4,7 @@ export interface IUser {
   _id: string;
   email: string;
   name: string;
-  role: "Admin" | "Lead" | "Member";
+  role: "Lead" | "Member";
   teamId?: string;
   jobTitle?: string;
   isActive: boolean;

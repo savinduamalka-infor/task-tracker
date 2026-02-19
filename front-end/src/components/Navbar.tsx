@@ -57,7 +57,7 @@ export function Navbar() {
       <div className="flex h-14 items-center px-4 md:px-6">
         <div className="flex items-center gap-2 mr-auto">
           <ClipboardList className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold tracking-tight">TaskFlow</span>
+          <span className="text-lg font-bold tracking-tight">Task Tracker</span>
         </div>
 
         <div className="flex items-center gap-2">

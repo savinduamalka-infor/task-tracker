@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { protectedRoute, adminOnly } from "../middleware/auth.middleware.js";
-import { getAdminDashboard, getMe, getAllUsers } from "../controllers/user.controller.js";
+import { protectedRoute } from "../middleware/auth.middleware.js";
+import { getMe, getAllUsers } from "../controllers/user.controller.js";
 import { getSession, signOut } from "../controllers/auth.controller.js";
 import { createTask, getAllTasks, getTaskById, updateTask, deleteTask } from "../controllers/task.controller.js";
 import { suggestSubtasks, addSubtaskToParent, getSubtasksByParent } from "../controllers/subtask.controller.js";
@@ -11,13 +11,13 @@ import { getTaskProgress } from "../controllers/progress.controller.js";
 import {  getUsersWithoutTeam } from "../controllers/user.controller.js";
 import { createTeam, addTeamMember, removeTeamMember, getTeamMembers, getAllTeams, getTeamById, updateTeam, deleteTeam } from "../controllers/team.controller.js";
 import { createJoinRequest, getMyJoinRequests, getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from "../controllers/joinRequest.controller.js";
+import { createAssignRequest, getMyAssignRequests, getTeamAssignRequests, approveAssignRequest, rejectAssignRequest } from "../controllers/assignRequest.controller.js";
 const router = Router();
 
 router.get("/api/auth/session", getSession);
 router.post("/api/auth/sign-out", signOut);
 router.get("/api/me", protectedRoute, getMe);
 router.get("/api/users", protectedRoute, getAllUsers);
-router.get("/api/admin/dashboard", protectedRoute, adminOnly, getAdminDashboard);
 router.get("/api/teams", protectedRoute, getAllTeams);
 router.post("/api/teams", protectedRoute, createTeam);
 router.get("/api/teams/:teamId", protectedRoute, getTeamById);
@@ -54,5 +54,11 @@ router.post("/api/notes/autocomplete", protectedRoute, autocompleteNoteHandler);
 router.post("/api/notes/refine", protectedRoute, refineNoteHandler);
 
 router.get("/api/tasks/:taskId/progress", protectedRoute, getTaskProgress);
+
+router.post("/api/assign-requests", protectedRoute, createAssignRequest);
+router.get("/api/assign-requests/my", protectedRoute, getMyAssignRequests);
+router.get("/api/assign-requests/team/:teamId", protectedRoute, getTeamAssignRequests);
+router.put("/api/assign-requests/:requestId/approve", protectedRoute, approveAssignRequest);
+router.put("/api/assign-requests/:requestId/reject", protectedRoute, rejectAssignRequest);
 
 export default router;

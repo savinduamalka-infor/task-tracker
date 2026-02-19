@@ -13,6 +13,7 @@ export interface ITask extends Document {
   summary?: string;
   description?: string;
   assigneeId: string;
+  helperIds: string[];
   status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
   priority: "Low" | "Medium" | "High";
   startDate?: Date;
@@ -58,6 +59,10 @@ const taskSchema = new Schema<ITask>(
     assigneeId: {
       type: String,
       required: true,
+    },
+    helperIds: {
+      type: [String],
+      default: [],
     },
     status: {
       type: String,
