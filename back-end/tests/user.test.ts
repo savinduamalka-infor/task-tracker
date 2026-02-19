@@ -22,9 +22,9 @@ beforeEach(async () => {
 });
 
 describe("User API", () => {
-  describe("GET /api/users/me", () => {
+  describe("GET /api/me", () => {
     it("should return current user", async () => {
-      const res = await request(app).get("/api/users/me");
+      const res = await request(app).get("/api/me");
       expect(res.status).toBe(200);
       expect(res.body.user).toBeDefined();
       expect(res.body.user.id || res.body.user._id).toBe("507f191e810c19729de860ea");
@@ -69,9 +69,9 @@ describe("User API", () => {
     });
   });
 
-  describe("GET /api/users/admin-dashboard", () => {
+  describe("GET /api/admin/dashboard", () => {
     it("should return admin dashboard message", async () => {
-      const res = await request(app).get("/api/users/admin-dashboard");
+      const res = await request(app).get("/api/admin/dashboard");
       expect(res.status).toBe(200);
       expect(res.body.message).toBe("Welcome to the admin dashboard");
       expect(res.body.user).toBeDefined();
