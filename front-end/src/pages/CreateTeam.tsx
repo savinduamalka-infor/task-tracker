@@ -4,7 +4,9 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { authApi } from "@/lib/api";
 import { useTaskStore } from "@/lib/task-store";
+import { useToast } from "@/hooks/use-toast";
 
 interface MemberInput {
   name: string;
@@ -14,6 +16,7 @@ interface MemberInput {
 export default function CreateTeam() {
   const { addTeam, setCurrentUser, currentUser } = useTaskStore();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
@@ -74,39 +77,39 @@ export default function CreateTeam() {
 
 const handleSubmit = async () => {
   if (!teamName.trim()) {
-    alert("Team name is required");
+    toast({ title: "Validation Error", description: "Team name is required", variant: "destructive" });
     return;
   }
-
-  const validMembers = members
-    .filter((m) => m.name.trim() && m.jobTitle.trim())
-    .map((m) => ({ name: m.name.trim(), jobTitle: m.jobTitle.trim() }));
 
   try {
     const res = await axios.post(
       `${import.meta.env.VITE_BACKEND_URL}/api/teams`,
-      { name: teamName.trim(), description: description.trim(), members: validMembers },
+      { name: teamName.trim(), description: description.trim() },
       { withCredentials: true }
     );
 
     if (res.data?.team) {
-      const team = res.data.team;
-      addTeam({
-        id: team._id || team.id,
-        name: team.name,
-        description: team.description,
-        members: [], // will be loaded later
-      });
-
-      if (currentUser && currentUser.id) {
-        setCurrentUser({ ...currentUser, teamId: team._id });
+      const sessionRes = await authApi.getSession();
+      if (sessionRes.data?.user) {
+        setCurrentUser({
+          _id: sessionRes.data.user.id,
+          id: sessionRes.data.user.id,
+          email: sessionRes.data.user.email,
+          name: sessionRes.data.user.name,
+          role: sessionRes.data.user.role,
+          teamId: sessionRes.data.user.teamId || "",
+          jobTitle: sessionRes.data.user.jobTitle || "",
+          isActive: sessionRes.data.user.isActive,
+          lastUpdateSubmitted: sessionRes.data.user.lastUpdateSubmitted || null,
+          avatar: sessionRes.data.user.image,
+        });
       }
-
-      navigate("/");
+      toast({ title: "Team Created", description: `"${teamName.trim()}" has been created successfully.` });
+      navigate("/", { state: { showTeamTab: true } });
     }
   } catch (err: any) {
     console.error("Create team failed", err);
-    alert(err.response?.data?.message || "Failed to create team. Please try again.");
+    toast({ title: "Error", description: err.response?.data?.message || "Failed to create team. Please try again.", variant: "destructive" });
   }
 };
 
