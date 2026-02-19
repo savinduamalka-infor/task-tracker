@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useTaskStore } from "@/lib/task-store";
+import { ClipboardList } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -42,7 +43,7 @@ export default function Login() {
       window.history.replaceState({}, "", "/login");
     }
   }, []);
-  
+
   useEffect(() => {
     if (currentUser.id) {
       navigate("/", { replace: true });
@@ -116,6 +117,10 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <ClipboardList className="h-6 w-6 text-primary" />
+          <span className="text-xl font-bold tracking-tight">Task Tracker</span>
+        </div>
         <Card>
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl">Welcome Back</CardTitle>
