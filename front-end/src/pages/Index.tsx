@@ -28,11 +28,21 @@ import axios from "axios";
 
 
 const Index = () => {
+
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentRole, currentUser, setCurrentUser } = useTaskStore();
+  const {currentUser, setCurrentUser } = useTaskStore();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  
+  //const [tasks, setTasks] = useState<Task[]>([]);
+  //const [users, setUsers] = useState<User[]>([]);
+  //const { tasks, currentRole } = useTaskStore();
+  //const [tasks, setTasks] = useState<Task[]>([]);
+  const { tasks: storeTasks, currentRole } = useTaskStore();
+
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -429,6 +439,7 @@ const Index = () => {
           <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} tasks={tasks} />
         )}
 
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <TabsList>
@@ -692,7 +703,11 @@ const Index = () => {
           loadTasks();
         }}
       />
+
       <CreateTaskDialog open={createOpen} onClose={() => { setCreateOpen(false); loadTasks(); }} />
+     {/* <CreateTaskDialog open={createOpen} onClose={() => setCreateOpen(false)} /> */}
+
+
       <DailyUpdateDialog
         open={updateOpen}
         taskId={updateTaskId}

@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { Task, TaskUpdate, TaskStatus, TaskPriority, User, UserRole, SuggestedSubtask } from "./types";
+import { mockTasks, mockUsers } from "./mock-data";
+import { Team } from "./types";
 
 interface TaskStore {
   tasks: Task[];
+  teams: Team[];
   users: User[];
   currentUser: User;
   currentRole: UserRole;
@@ -33,7 +36,8 @@ const DEFAULT_USER: User = {
 };
 
 export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [currentRole, setCurrentRole] = useState<UserRole>("Lead");
   const [currentUser, setCurrentUser] = useState<User>(DEFAULT_USER);
 
@@ -116,7 +120,8 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
     <TaskStoreContext.Provider
       value={{
         tasks,
-        users: [],
+        teams,
+        users: mockUsers,
         currentUser,
         currentRole,
         setCurrentRole,

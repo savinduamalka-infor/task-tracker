@@ -17,6 +17,12 @@ export const createTeam = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Team name is required" });
     }
 
+    const existingTeam = await Team.findOne({ name: name.trim() });
+    if (existingTeam) {
+      return res.status(409).json({ message: "Team already exists" });
+    }
+
+    // 1. Create team with creator as first member
     const team = new Team({
       name,
       description,
