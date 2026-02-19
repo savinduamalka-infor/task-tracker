@@ -64,4 +64,5 @@ export const joinRequestApi = {
 
 export const teamApi = {
   getAll: () => api.get("/api/teams"),
+  getMembers: (teamId: string) => api.get(`/api/teams/${teamId}/members`),
 };

@@ -72,10 +72,11 @@ const Index = () => {
     loadTeamMembers();
   }, []);
 
-  // Re-load team members whenever currentUser.teamId changes (e.g. after team creation)
   useEffect(() => {
     if (currentUser?.teamId) {
       loadTeamMembers();
+      loadUsers();
+      loadTasks();
     }
   }, [currentUser?.teamId]);
 
@@ -89,9 +90,26 @@ const Index = () => {
   }, [location.state]);
 
   const loadUsers = () => {
-    userApi.getAll()
-      .then(res => setUsers(res.data))
-      .catch(err => console.error("Failed to load users:", err));
+    if (currentUser?.teamId) {
+      teamApi.getMembers(currentUser.teamId)
+        .then(res => {
+          const members = (res.data?.members || []).map((m: any) => ({
+            _id: String(m._id),
+            id: String(m._id),
+            name: m.name,
+            email: m.email,
+            role: m.role,
+            teamId: m.teamId,
+            jobTitle: m.jobTitle || "",
+            isActive: m.isActive ?? true,
+            lastUpdateSubmitted: null,
+          }));
+          setUsers(members);
+        })
+        .catch(err => console.error("Failed to load team members:", err));
+    } else {
+      setUsers([]);
+    }
   };
 
   const loadTeamMembers = async () => {
