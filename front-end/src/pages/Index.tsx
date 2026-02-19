@@ -186,6 +186,9 @@ const Index = () => {
     applyStatusChange(taskId, newStatus);
   };
 
+  const statusLabel = (s: TaskStatus) =>
+    ({ TODO: "To Do", IN_PROGRESS: "In Progress", BLOCKED: "Blocked", DONE: "Done" }[s] ?? s);
+
   const applyStatusChange = async (taskId: string, newStatus: TaskStatus, reason?: string) => {
     // Optimistic update
     setTasks((prev) =>
@@ -193,20 +196,22 @@ const Index = () => {
     );
 
     try {
-      const updatePayload: any = { status: newStatus };
-      if (reason) {
-        updatePayload.updates = {
-          note: `Status changed to Blocked`,
-          blockedReason: reason,
-        };
-      }
+      const updatePayload: any = {
+        status: newStatus,
+        updates: {
+          note: reason
+            ? `Status changed to Blocked`
+            : `Status changed to ${statusLabel(newStatus)}`,
+          ...(reason ? { blockedReason: reason } : {}),
+        },
+      };
       await taskApi.update(taskId, updatePayload);
       toast({ title: "Status Updated", description: `Task moved to ${newStatus.replace("_", " ")}.` });
-      loadTasks(); // Refresh from server
+      loadTasks();
     } catch (error) {
       console.error("Failed to update task status:", error);
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
-      loadTasks(); // Revert by reloading
+      loadTasks();
     }
   };
 
