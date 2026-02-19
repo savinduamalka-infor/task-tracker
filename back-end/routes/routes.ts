@@ -9,8 +9,7 @@ import { autocompleteNoteHandler, refineNoteHandler } from "../controllers/note.
 import { getTaskProgress } from "../controllers/progress.controller.js";
 
 import {  getUsersWithoutTeam } from "../controllers/user.controller.js";
-//import { getSession, signOut } from "../controllers/auth.controller.js";
-import { createTeam, addTeamMember, removeTeamMember, getTeamMembers } from "../controllers/team.controller";
+import { createTeam, addTeamMember, removeTeamMember, getTeamMembers, getAllTeams, getTeamById, updateTeam, deleteTeam } from "../controllers/team.controller.js";
 const router = Router();
 
 router.get("/api/auth/session", getSession);
@@ -18,13 +17,16 @@ router.post("/api/auth/sign-out", signOut);
 router.get("/api/me", protectedRoute, getMe);
 router.get("/api/users", protectedRoute, getAllUsers);
 router.get("/api/admin/dashboard", protectedRoute, adminOnly, getAdminDashboard);
+router.get("/api/teams", protectedRoute, getAllTeams);
 router.post("/api/teams", protectedRoute, createTeam);
+router.get("/api/teams/:teamId", protectedRoute, getTeamById);
+router.put("/api/teams/:teamId", protectedRoute, updateTeam);
+router.delete("/api/teams/:teamId", protectedRoute, deleteTeam);
 router.post("/api/teams/:teamId/members", protectedRoute, addTeamMember);
 router.delete("/api/teams/:teamId/members/:memberId", protectedRoute, removeTeamMember);
 router.get(
 	"/api/users/without-team",
 	protectedRoute,
-	adminOnly,
 	getUsersWithoutTeam,
 );
 router.get("/api/teams/:teamId/members", protectedRoute, getTeamMembers);
