@@ -12,10 +12,7 @@ let mockUser = {
 // Mock authentication middleware
 vi.mock("../middleware/auth.middleware.js", () => ({
   protectedRoute: (req: any, res: any, next: any) => {
-    req.user = {
-      id: "507f191e810c19729de860ea",
-      role: "Admin",
-    };
+    req.user = mockUser; 
     next();
   },
   adminOnly: (req: any, res: any, next: any) => next(),
@@ -83,7 +80,7 @@ it("should return 403 if member assigns to others", async () => {
     .post("/api/tasks")
     .send({
       title: "Test Task",
-      assigneeId: "6996b08eb4718e64cf534243",
+      assigneeId: "23456",
       status: "TODO",
       priority: "Medium",
     });
@@ -93,6 +90,7 @@ it("should return 403 if member assigns to others", async () => {
 
   });
 
+  // tasks
   describe("GET /api/tasks", () => {
     it("should get all tasks", async () => {
       await TaskModel.create({
@@ -130,6 +128,7 @@ it("should return 403 if member assigns to others", async () => {
     });
   });
 
+  // Get task by ID
   describe("GET /api/tasks/:id", () => {
     it("should get task by id", async () => {
       const task = await TaskModel.create({
@@ -150,6 +149,7 @@ it("should return 403 if member assigns to others", async () => {
     });
   });
 
+  // Update task
   describe("PATCH /api/tasks/:id", () => {
     it("should update task", async () => {
       const task = await TaskModel.create({
@@ -161,7 +161,7 @@ it("should return 403 if member assigns to others", async () => {
         isSubtask: false,
       });
       const res = await request(app)
-        .patch(`/api/tasks/${task._id}`)
+        .patch(`/api/tasks/${task._id.toString()}`)
         .send({ status: "DONE" });
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("DONE");
@@ -176,7 +176,7 @@ it("should return 403 if member assigns to others", async () => {
         isSubtask: false,
       });
       const res = await request(app)
-        .patch(`/api/tasks/${task._id}`)
+        .patch(`/api/tasks/${task._id.toString()}`)
         .send({ updates: { note: "Progress update" } });
       expect(res.status).toBe(200);
       expect(res.body.updates.length).toBe(1);
