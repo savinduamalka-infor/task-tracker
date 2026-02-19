@@ -47,23 +47,23 @@ describe("Team API", () => {
       expect(res.status).toBe(400);
     });
 
-      it("should return 400 if team already exists", async () => {
-          
-          await request(app)
-              .post("/api/teams")
-              .send({ name: "Dev Team" });
+    it("should return 400 if team already exists", async () => {
 
-          
-          const res = await request(app)
-              .post("/api/teams")
-              .send({ name: "Dev Team" });
+      await request(app)
+        .post("/api/teams")
+        .send({ name: "Dev Team" });
 
-          expect(res.status).toBe(409); 
-      });
+
+      const res = await request(app)
+        .post("/api/teams")
+        .send({ name: "Dev Team" });
+
+      expect(res.status).toBe(409);
+    });
 
 
   });
-  
+
   // Get team members
   describe("GET /api/teams/:teamId/members", () => {
 
@@ -134,42 +134,41 @@ describe("Team API", () => {
     });
 
     it("should return 404 if team not found", async () => {
-  const fakeId = new mongoose.Types.ObjectId();
+      const fakeId = new mongoose.Types.ObjectId();
 
-  const res = await request(app)
-    .post(`/api/teams/${fakeId}/members`)
-    .send({ memberId: new mongoose.Types.ObjectId().toString() });
+      const res = await request(app)
+        .post(`/api/teams/${fakeId}/members`)
+        .send({ memberId: new mongoose.Types.ObjectId().toString() });
 
-  expect(res.status).toBe(404);
-});
+      expect(res.status).toBe(404);
+    });
 
-it("should return 403 if user is not admin or creator", async () => {
-    const originalUser = { ...mockUser };
-  // Change user to normal member
-  mockUser = {
-    id: "randomUser",
-    role: "Member",
-  };
+    it("should return 403 if user is not admin or creator", async () => {
+      const originalUser = { ...mockUser };
+      // Change user to normal member
+      mockUser = {
+        id: "randomUser",
+        role: "Member",
+      };
 
-  const team = await Team.create({
-    name: "Team A",
-    createdBy: "someOtherUser",
-    members: [],
-  });
+      const team = await Team.create({
+        name: "Team A",
+        createdBy: "someOtherUser",
+        members: [],
+      });
 
-  const res = await request(app)
-    .post(`/api/teams/${team._id}/members`)
-    .send({ memberId: new mongoose.Types.ObjectId().toString() });
+      const res = await request(app)
+        .post(`/api/teams/${team._id}/members`)
+        .send({ memberId: new mongoose.Types.ObjectId().toString() });
 
-  expect(res.status).toBe(403);
-  mockUser = originalUser;
-});
+      expect(res.status).toBe(403);
+      mockUser = originalUser;
+    });
 
   });
 
   // Remove team member
   describe("DELETE /api/teams/:teamId/members/:memberId", () => {
-
     it("should remove member from team", async () => {
       const memberId = new mongoose.Types.ObjectId().toString();
 
@@ -194,6 +193,7 @@ it("should return 403 if user is not admin or creator", async () => {
         createdBy: "507f191e810c19729de860ea",
         members: [],
       });
+
 
       const res = await request(app)
         .delete(`/api/teams/${team._id}/members/${memberId}`);

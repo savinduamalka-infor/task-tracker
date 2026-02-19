@@ -86,14 +86,14 @@ export const getTeamMembers = async (req: Request, res: Response) => {
     if (!team) return res.status(404).json({ message: "Team not found" });
 
     
-console.log("=== MODEL & COLLECTION DIAGNOSTIC ===");
-console.log("Model name:            ", User.modelName);
-console.log("Collection name:       ", User.collection?.name || "undefined");
-console.log("Mongoose connection DB:", User.db.name || mongoose.connection.name || "unknown");
-console.log("Team members IDs:      ", team.members);
-console.log("Team members types:    ", team.members.map(id => typeof id));
-console.log("Team members count:    ", team.members.length);
-console.log("=== END DIAGNOSTIC ===");
+// console.log("=== MODEL & COLLECTION DIAGNOSTIC ===");
+// console.log("Model name:            ", User.modelName);
+// console.log("Collection name:       ", User.collection?.name || "undefined");
+// console.log("Mongoose connection DB:", User.db.name || mongoose.connection.name || "unknown");
+// console.log("Team members IDs:      ", team.members);
+// console.log("Team members types:    ", team.members.map(id => typeof id));
+// console.log("Team members count:    ", team.members.length);
+// console.log("=== END DIAGNOSTIC ===");
 
     // allow if requester is Admin, team creator, or a member of the team
     const isMember = team.members.includes(user.id);
