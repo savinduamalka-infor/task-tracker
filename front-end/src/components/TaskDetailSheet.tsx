@@ -405,7 +405,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                 Request Help
               </Button>
             )}
-            {(currentRole === "Lead" || currentRole === "Admin") && task.status !== "DONE" && (
+            {currentRole === "Lead" && task.status !== "DONE" && (
               <Button
                 size="sm"
                 variant="outline"

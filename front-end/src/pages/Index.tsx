@@ -442,7 +442,7 @@ const Index = () => {
       loadAllTeams();
       loadMyJoinRequests();
     }
-    if (currentUser?.teamId && (currentUser.role === "Lead" || currentUser.role === "Admin")) {
+    if (currentUser?.teamId && currentUser.role === "Lead") {
       loadPendingJoinRequests();
       loadPendingAssignRequests();
     }
@@ -503,7 +503,7 @@ const Index = () => {
                       <h3 className="text-lg font-semibold">{teamName || "Team Members"}</h3>
                       <span className="text-sm text-muted-foreground">{teamMembers.length} members</span>
                     </div>
-                    {(currentUser.role === "Lead" || currentUser.role === "Admin") && (
+                    {currentUser.role === "Lead" && (
                       <Button
                         size="sm"
                         onClick={async () => {
@@ -517,7 +517,7 @@ const Index = () => {
                     )}
                   </div>
 
-                  {(currentUser.role === "Lead" || currentUser.role === "Admin") && pendingJoinRequests.length > 0 && (
+                  {currentUser.role === "Lead" && pendingJoinRequests.length > 0 && (
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Pending Join Requests ({pendingJoinRequests.length})
@@ -584,7 +584,7 @@ const Index = () => {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">{member.role || "Member"}</span>
-                            {(currentUser.role === "Lead" || currentUser.role === "Admin") && (
+                            {currentUser.role === "Lead" && (
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -600,7 +600,7 @@ const Index = () => {
                     </div>
                   )}
                 </>
-              ) : currentUser.role === "Lead" || currentUser.role === "Admin" ? (
+              ) : currentUser.role === "Lead" ? (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">You need to create a team first.</p>
                   <Button onClick={() => setCreateTeamDialogOpen(true)} className="gap-2">

@@ -106,7 +106,7 @@ export const getTeamAssignRequests = async (req: Request, res: Response) => {
     const team = await Team.findById(teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    if (user.role !== "Lead" && user.role !== "Admin" && team.createdBy !== user.id) {
+    if (user.role !== "Lead" && team.createdBy !== user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -186,7 +186,7 @@ export const approveAssignRequest = async (req: Request, res: Response) => {
     // Verify lead belongs to the team
     const team = await Team.findById(request.teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
-    if (user.role !== "Lead" && user.role !== "Admin" && team.createdBy !== user.id) {
+    if (user.role !== "Lead" && team.createdBy !== user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -246,7 +246,7 @@ export const rejectAssignRequest = async (req: Request, res: Response) => {
 
     const team = await Team.findById(request.teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
-    if (user.role !== "Lead" && user.role !== "Admin" && team.createdBy !== user.id) {
+    if (user.role !== "Lead" && team.createdBy !== user.id) {
       return res.status(403).json({ message: "Forbidden" });
     }
 

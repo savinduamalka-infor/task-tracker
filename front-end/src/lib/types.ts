@@ -1,4 +1,4 @@
-export type UserRole = "Admin" | "Lead" | "Member";
+export type UserRole = "Lead" | "Member";
 
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
 

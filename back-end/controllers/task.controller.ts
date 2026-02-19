@@ -87,11 +87,11 @@ export async function updateTask(req: Request, res: Response) {
   try {
     const { updates, ...updateData } = req.body;
 
-    // Only Lead / Admin can change the assignee
+    // Only Lead can change the assignee
     if (updateData.assigneeId !== undefined) {
       const role = req.user!.role;
-      if (role !== "Lead" && role !== "Admin") {
-        res.status(403).json({ error: "Only a Lead or Admin can reassign a task" });
+      if (role !== "Lead") {
+        res.status(403).json({ error: "Only a Lead can reassign a task" });
         return;
       }
     }

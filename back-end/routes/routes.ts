@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { protectedRoute, adminOnly } from "../middleware/auth.middleware.js";
-import { getAdminDashboard, getMe, getAllUsers } from "../controllers/user.controller.js";
+import { protectedRoute } from "../middleware/auth.middleware.js";
+import { getMe, getAllUsers } from "../controllers/user.controller.js";
 import { getSession, signOut } from "../controllers/auth.controller.js";
 import { createTask, getAllTasks, getTaskById, updateTask, deleteTask } from "../controllers/task.controller.js";
 import { suggestSubtasks, addSubtaskToParent, getSubtasksByParent } from "../controllers/subtask.controller.js";
@@ -18,7 +18,6 @@ router.get("/api/auth/session", getSession);
 router.post("/api/auth/sign-out", signOut);
 router.get("/api/me", protectedRoute, getMe);
 router.get("/api/users", protectedRoute, getAllUsers);
-router.get("/api/admin/dashboard", protectedRoute, adminOnly, getAdminDashboard);
 router.get("/api/teams", protectedRoute, getAllTeams);
 router.post("/api/teams", protectedRoute, createTeam);
 router.get("/api/teams/:teamId", protectedRoute, getTeamById);
