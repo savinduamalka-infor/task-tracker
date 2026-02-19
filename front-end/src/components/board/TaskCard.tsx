@@ -15,11 +15,11 @@ interface TaskCardProps {
 export function TaskCard({ task, onClick, users }: TaskCardProps) {
   const assignee = users.find(u => u._id === task.assigneeId);
   const initials = assignee?.name.split(" ").map((n) => n[0]).join("") ?? "?";
-  const due = parseISO(task.dueDate);
-  const overdue = isPast(due) && task.status !== "DONE" && !isToday(due);
+  const due = task.dueDate ? parseISO(task.dueDate) : new Date();
+  const overdue = task.dueDate && isPast(due) && task.status !== "DONE" && !isToday(due);
 
-  const subtasksDone = task.suggestedSubtasks.filter((s) => s.status === "DONE").length;
-  const subtasksTotal = task.suggestedSubtasks.length;
+  const subtasksDone = (task.suggestedSubtasks || []).filter((s) => s.status === "DONE").length;
+  const subtasksTotal = (task.suggestedSubtasks || []).length;
 
   return (
     <Card
