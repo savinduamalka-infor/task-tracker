@@ -20,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { taskApi, teamApi } from "@/lib/api";
+import { taskApi, teamApi, projectApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { TaskPriority } from "@/lib/types";
+import { TaskPriority, Project } from "@/lib/types";
 import { useTaskStore } from "@/lib/task-store";
 
 const schema = z.object({
@@ -33,6 +33,7 @@ const schema = z.object({
   priority: z.enum(["Low", "Medium", "High"]),
   startDate: z.string().min(1, "Start date is required"),
   dueDate: z.string().min(1, "Due date is required"),
+  projectId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -46,6 +47,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
   const { toast } = useToast();
   const { currentUser, currentRole } = useTaskStore();
   const [users, setUsers] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const {
     control,
@@ -62,6 +64,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
       priority: "Medium",
       startDate: new Date().toISOString().split("T")[0],
       dueDate: "",
+      projectId: "",
     },
   });
 
@@ -92,6 +95,13 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
       } else {
         setUsers([]);
       }
+
+      // Load projects for the team
+      if (currentUser.teamId) {
+        projectApi.getByTeam(currentUser.teamId)
+          .then((res) => setProjects(res.data.projects || []))
+          .catch(() => setProjects([]));
+      }
     }
   }, [open, isMember, currentUser.id, currentUser.teamId, setValue, toast]);
 
@@ -107,6 +117,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
         startDate: data.startDate,
         dueDate: data.dueDate,
         teamId: currentUser.teamId || "",
+        projectId: data.projectId || undefined,
       });
       toast({
         title: "Success",
@@ -133,12 +144,12 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div>
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
             <Input id="title" {...register("title")} placeholder="Task title" />
             {errors.title && <p className="text-xs text-destructive mt-1">{errors.title.message}</p>}
           </div>
           <div>
-            <Label htmlFor="summary">Summary</Label>
+            <Label htmlFor="summary">Summary <span className="text-destructive">*</span></Label>
             <Input id="summary" {...register("summary")} placeholder="Brief summary" />
             {errors.summary && <p className="text-xs text-destructive mt-1">{errors.summary.message}</p>}
           </div>
@@ -148,7 +159,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Assignee</Label>
+              <Label>Assignee <span className="text-destructive">*</span></Label>
               <Controller
                 name="assigneeId"
                 control={control}
@@ -166,7 +177,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
               {errors.assigneeId && <p className="text-xs text-destructive mt-1">{errors.assigneeId.message}</p>}
             </div>
             <div>
-              <Label>Priority</Label>
+              <Label>Priority <span className="text-destructive">*</span></Label>
               <Select onValueChange={(v) => setValue("priority", v as any)} value={watch("priority")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -177,13 +188,38 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
               </Select>
             </div>
           </div>
+          <div>
+            <Label>Project</Label>
+            <Controller
+              name="projectId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || "none"}
+                  onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No project</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p._id} value={p._id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Start Date</Label>
+              <Label>Start Date <span className="text-destructive">*</span></Label>
               <Input type="date" {...register("startDate")} />
             </div>
             <div>
-              <Label>Due Date</Label>
+              <Label>Due Date <span className="text-destructive">*</span></Label>
               <Input type="date" {...register("dueDate")} />
               {errors.dueDate && <p className="text-xs text-destructive mt-1">{errors.dueDate.message}</p>}
             </div>

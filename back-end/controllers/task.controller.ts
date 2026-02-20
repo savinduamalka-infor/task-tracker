@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { TaskModel } from "../models/task.model.js";
+import ProjectModel from "../models/project.model.js";
 
 export async function createTask(req: Request, res: Response) {
   try {
@@ -26,6 +27,19 @@ export async function createTask(req: Request, res: Response) {
     if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
       res.status(403).json({ error: "Members can only assign tasks to themselves" });
       return;
+    }
+    // Validate projectId belongs to the same team
+    const projectId = req.body.projectId;
+    if (projectId) {
+      const project = await ProjectModel.findById(projectId);
+      if (!project) {
+        res.status(400).json({ error: "Project not found" });
+        return;
+      }
+      if (project.teamId !== teamId) {
+        res.status(400).json({ error: "Selected project does not belong to this team" });
+        return;
+      }
     }
 
     const task = await TaskModel.create({
@@ -92,11 +106,28 @@ export async function updateTask(req: Request, res: Response) {
   try {
     const { updates, ...updateData } = req.body;
 
+    const targetTask = await TaskModel.findById(req.params.id);
+    if (!targetTask) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+
+    const userId = req.user!.id;
+    const isAssignee = String(targetTask.assigneeId) === userId;
+    const isHelper = (targetTask.helperIds || []).map(String).includes(userId);
+    const isLead = req.user!.role === "Lead";
+
     // Only Lead can change the assignee
     if (updateData.assigneeId !== undefined) {
-      const role = req.user!.role;
-      if (role !== "Lead") {
+      if (!isLead) {
         res.status(403).json({ error: "Only a Lead can reassign a task" });
+        return;
+      }
+    }
+
+    if (updateData.status !== undefined) {
+      if (!isAssignee && !isHelper) {
+        res.status(403).json({ error: "Only the assignee or a helper can change task status" });
         return;
       }
     }
@@ -108,14 +139,6 @@ export async function updateTask(req: Request, res: Response) {
         return;
       }
 
-      const targetTask = await TaskModel.findById(req.params.id);
-      if (!targetTask) {
-        res.status(404).json({ error: "Task not found" });
-        return;
-      }
-      const userId = req.user!.id;
-      const isAssignee = String(targetTask.assigneeId) === userId;
-      const isHelper = (targetTask.helperIds || []).map(String).includes(userId);
       if (!isAssignee && !isHelper) {
         res.status(403).json({ error: "Only the assignee or a helper can add updates to this task" });
         return;

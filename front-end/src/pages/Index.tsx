@@ -8,10 +8,10 @@ import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
-import { taskApi, userApi, authApi, joinRequestApi, teamApi, assignRequestApi } from "@/lib/api";
+import { taskApi, userApi, authApi, joinRequestApi, teamApi, assignRequestApi, projectApi } from "@/lib/api";
 import { AssignRequest } from "@/components/dashboard/LeadDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutGrid, Table2, Filter, Users, UserPlus, Trash2, Plus, Clock, Check, X, Send } from "lucide-react";
+import { LayoutGrid, Table2, Filter, Users, UserPlus, Trash2, Plus, Clock, Check, X, Send, FolderOpen } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Task, TaskStatus, User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import axios from "axios";
+import { ProjectsTab } from "@/components/ProjectsTab";
 
 
 
@@ -35,6 +36,7 @@ const Index = () => {
   const {currentUser, setCurrentUser } = useTaskStore();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   
   //const [tasks, setTasks] = useState<Task[]>([]);
   //const [users, setUsers] = useState<User[]>([]);
@@ -84,6 +86,7 @@ const Index = () => {
     loadTasks();
     loadUsers();
     loadTeamMembers();
+    loadProjects();
   }, []);
 
   useEffect(() => {
@@ -91,6 +94,7 @@ const Index = () => {
       loadTeamMembers();
       loadUsers();
       loadTasks();
+      loadProjects();
     }
   }, [currentUser?.teamId]);
 
@@ -123,6 +127,16 @@ const Index = () => {
         .catch(err => console.error("Failed to load team members:", err));
     } else {
       setUsers([]);
+    }
+  };
+
+  const loadProjects = () => {
+    if (currentUser?.teamId) {
+      projectApi.getByTeam(currentUser.teamId)
+        .then(res => setProjects(res.data.projects || []))
+        .catch(() => setProjects([]));
+    } else {
+      setProjects([]);
     }
   };
 
@@ -236,9 +250,10 @@ const Index = () => {
       await taskApi.update(taskId, updatePayload);
       toast({ title: "Status Updated", description: `Task moved to ${newStatus.replace("_", " ")}.` });
       loadTasks();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update task status:", error);
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      const errorMsg = error.response?.data?.error || "Failed to update status";
+      toast({ title: "Error", description: errorMsg, variant: "destructive" });
       loadTasks();
     }
   };
@@ -513,6 +528,9 @@ const Index = () => {
               <TabsTrigger value="team" className="gap-1.5">
                 <Users className="h-4 w-4" /> Team
               </TabsTrigger>
+              <TabsTrigger value="projects" className="gap-1.5">
+                <FolderOpen className="h-4 w-4" /> Projects
+              </TabsTrigger>
             </TabsList>
             <Button
               size="sm"
@@ -759,6 +777,19 @@ const Index = () => {
                 </div>
               )}
             </div>
+          </TabsContent>
+          <TabsContent value="projects" className="mt-4">
+            {currentUser.teamId ? (
+              <ProjectsTab teamId={currentUser.teamId} initialProjects={projects} onProjectsChange={setProjects} />
+            ) : (
+              <div className="text-center py-12">
+                <FolderOpen className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="font-medium">No team yet</p>
+                <p className="text-sm text-muted-foreground">
+                  You need to be part of a team to view projects.
+                </p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

@@ -46,6 +46,7 @@ export interface DailySummaryTask {
   status: string;
   priority: string;
   assigneeName: string;
+  projectName?: string;
   updates: Array<{
     note: string;
     blockedReason?: string;
@@ -142,7 +143,8 @@ export async function generateDailySummary(
       const updateNotes = t.updates.length
         ? t.updates.map((u) => `  - ${u.note}${u.blockedReason ? ` (Blocked: ${u.blockedReason})` : ""}`).join("\n")
         : "  - No updates submitted today";
-      return `${i + 1}. "${t.title}" (Priority: ${t.priority}, Assignee: ${t.assigneeName}, Current Status: ${t.status})\n${updateNotes}`;
+      const projectLabel = t.projectName ? `, Project: ${t.projectName}` : "";
+      return `${i + 1}. "${t.title}" (Priority: ${t.priority}, Assignee: ${t.assigneeName}, Current Status: ${t.status}${projectLabel})\n${updateNotes}`;
     }).join("\n\n");
 
     const response = await axios.post(
@@ -165,12 +167,16 @@ List tasks actively worked on (IN_PROGRESS). Briefly mention what was done based
 ## 🚫 Blocked
 List any blocked tasks with their blocked reasons. If none, say "No blockers — great work!"
 
+## � Projects Active Today
+List each distinct project that had activity, with the tasks worked on under each. If no tasks belong to a project, skip this section.
+
 ## 📊 Team Snapshot
 Give a 2-3 sentence overall assessment of the team's day — productivity, momentum, any concerns.
 
 Rules:
 - Be concise. Use bullet points.
 - Reference assignee names.
+- When a task belongs to a project, mention the project name next to the task (e.g. "Task Title [Project A]").
 - Do not invent information not in the data.
 - Do not include raw JSON or code blocks.
 - Keep it professional but friendly.`
