@@ -17,12 +17,15 @@ A full-stack team task management application built for structured collaboration
   - [Frontend Setup](#frontend-setup)
 - [Environment Variables](#environment-variables)
 - [API Reference](#api-reference)
+  - [Projects](#projects)
 
 ---
 
 ## Overview
 
 Task Tracker is designed for small-to-medium engineering or project teams where a **Lead** manages work distribution and **Members** execute and report on it. The app enforces a clean separation of concerns — leads create and assign tasks, members update progress and request help — while an AI layer accelerates routine work like note writing, subtask breakdown, and daily summaries.
+
+Teams can now own multiple **Projects**. Tasks are optionally assigned to a project, allowing assignees to switch between projects within the same team without any team change. The daily AI summary is project-aware and groups activity by project when relevant.
 
 ---
 
@@ -49,6 +52,8 @@ Two roles with strictly enforced permissions on both frontend and backend:
 | Request help on a task | ❌ | Assigned only |
 | View team dashboard | ✅ | ❌ |
 | View personal dashboard | ✅ | ✅ |
+| Create / edit / delete projects | ✅ | ❌ |
+| View projects | ✅ | ✅ |
 
 ### Team Management
 - Leads can create teams with a name and description
@@ -57,8 +62,18 @@ Two roles with strictly enforced permissions on both frontend and backend:
 - Leads can directly add or remove members from a team
 - Team-scoped task visibility — members only see tasks within their team
 
+### Projects
+- Each team can own multiple **Projects**, acting as an intermediary organisational layer between the team and its tasks
+- A dedicated **Projects tab** sits immediately after the Team tab in the main navigation
+- **Lead**: full CRUD — create, rename, update description, and delete projects
+  - Deleting a project **cascade-deletes** all tasks (and their subtasks) that belong to it
+- **Member**: read-only access — can browse projects but cannot create, edit, or delete them
+- Project names are unique within a team (enforced by a compound MongoDB index)
+
 ### Task Management
-- Create tasks with title, summary, description, priority (`Low` / `Medium` / `High`), start date, due date, and assignee
+- Create tasks with title, summary, description, priority (`Low` / `Medium` / `High`), start date, due date, assignee, and an optional **project**
+- The project dropdown in the Create Task dialog lists all projects in the current team; selection is available to both Lead and Member (Members can choose a project for their self-assigned task)
+- The backend validates that the selected project belongs to the same team as the task before saving
 - Task statuses: `TO DO` → `IN PROGRESS` → `DONE` / `BLOCKED`
 - Drag-and-drop Kanban board across status columns (with activity feed entry on each move)
 - Table view with sortable columns
@@ -104,11 +119,14 @@ A one-click "Refine" action in the update dialog. The model rewrites the member'
 #### 4. End-of-Day Team Summary
 Requested by the Lead from the dashboard. The backend fetches all tasks that had activity (updates or status changes) on the target date — scoped to the team — and sends them to the AI with a rigid structured prompt.
 
-The generated Markdown summary always contains four sections:
+The generated Markdown summary always contains five sections:
 - **🏁 Completed Today** — tasks that reached DONE
 - **🚧 In Progress** — tasks actively worked on, with update notes
 - **🚫 Blocked** — blocked tasks with their blocker reasons
+- **📁 Projects Active Today** — lists each distinct project that had activity, with its tasks grouped underneath (only present when project-linked tasks exist)
 - **📊 Team Snapshot** — 2–3 sentence overall assessment of the team's day
+
+When a task belongs to a project, the project name is included in the task data sent to the LLM (`Project: <name>` label) and the model annotates each such task with `[Project Name]` inline throughout the summary.
 
 **Model behaviour:** temperature `0.5`, max 1000 tokens, names of assignees included.
 
@@ -195,16 +213,29 @@ task-tracker/
 │   │   └── summary.controller.ts
 │   ├── middleware/
 │   │   └── auth.middleware.ts   # Session guard + role helpers
+│   ├── controllers/
+│   │   ├── auth.controller.ts
+│   │   ├── task.controller.ts
+│   │   ├── subtask.controller.ts
+│   │   ├── team.controller.ts
+│   │   ├── project.controller.ts  # NEW — CRUD for projects (Lead-only writes)
+│   │   ├── user.controller.ts
+│   │   ├── joinRequest.controller.ts
+│   │   ├── assignRequest.controller.ts
+│   │   ├── note.controller.ts
+│   │   ├── progress.controller.ts
+│   │   └── summary.controller.ts
 │   ├── models/
-│   │   ├── task.model.ts
+│   │   ├── task.model.ts          # projectId field added
 │   │   ├── team.model.ts
+│   │   ├── project.model.ts       # NEW — Project schema
 │   │   ├── user.model.ts
 │   │   ├── joinRequest.model.ts
 │   │   └── assignRequest.model.ts
 │   ├── routes/
 │   │   └── routes.ts
 │   ├── services/
-│   │   └── llm.service.ts       # AI integration layer
+│   │   └── llm.service.ts       # AI integration layer (DailySummaryTask now carries projectName)
 │   ├── scripts/
 │   │   └── seed.ts              # Database seeding script
 │   ├── server.ts
@@ -216,8 +247,9 @@ task-tracker/
     │   │   ├── Navbar.tsx
     │   │   ├── ProtectedRoute.tsx
     │   │   ├── TaskDetailSheet.tsx
-    │   │   ├── CreateTaskDialog.tsx
+    │   │   ├── CreateTaskDialog.tsx   # Project dropdown added
     │   │   ├── DailyUpdateDialog.tsx
+    │   │   ├── ProjectsTab.tsx        # NEW — Projects tab UI
     │   │   ├── TaskTable.tsx
     │   │   ├── AiSummary.tsx
     │   │   ├── StatusBadge.tsx
@@ -228,11 +260,11 @@ task-tracker/
     │   │       ├── LeadDashboard.tsx
     │   │       └── MemberDashboard.tsx
     │   ├── lib/
-    │   │   ├── api.ts          # Axios instance + all API calls
+    │   │   ├── api.ts          # Axios instance + all API calls (projectApi added)
     │   │   ├── task-store.tsx  # Global React context / store
-    │   │   └── types.ts        # Shared TypeScript types
+    │   │   └── types.ts        # Shared TypeScript types (Project type + Task.projectId added)
     │   └── pages/
-    │       ├── Index.tsx       # Main dashboard page
+    │       ├── Index.tsx       # Main dashboard page (Projects tab added)
     │       ├── Login.tsx
     │       ├── Signup.tsx
     │       ├── CreateTeam.tsx
@@ -252,15 +284,18 @@ task-tracker/
 - Can add progress updates **only on tasks they are the assignee or helper of**
 - Has access to the Lead Dashboard with team-wide visibility
 - Only role that can delete tasks
+- **Full CRUD over projects** — create, edit name/description, delete (cascade-deletes all tasks in the project)
 
 ### Member
 - Can create tasks, but the task is automatically assigned to themselves (cannot assign to others)
+- Can select a project from the team's project list when creating a task
 - Views tasks they are assigned to or helping with
 - Submits daily progress updates on their assigned or helper tasks
 - Requests help from the lead when needed, suggesting co-workers
-- Cannot delete tasks (their own or anyone else’s)
+- Cannot delete tasks (their own or anyone else's)
 - Cannot reassign tasks
-- Cannot see other members’ task details unless part of the same task
+- Cannot see other members' task details unless part of the same task
+- **Read-only access to projects** — can view all projects in their team but cannot create, edit, or delete them
 
 ---
 
@@ -389,10 +424,19 @@ All endpoints require a valid session cookie unless marked public.
 | `PUT` | `/api/assign-requests/:requestId/approve` | Approve and add a helper |
 | `PUT` | `/api/assign-requests/:requestId/reject` | Reject request |
 
+### Projects
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/teams/:teamId/projects` | Create a project (Lead only) |
+| `GET` | `/api/teams/:teamId/projects` | List all projects for a team |
+| `GET` | `/api/projects/:projectId` | Get a single project |
+| `PATCH` | `/api/projects/:projectId` | Update project name / description (Lead only) |
+| `DELETE` | `/api/projects/:projectId` | Delete project + cascade-delete its tasks (Lead only) |
+
 ### AI & Utilities
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/api/notes/autocomplete` | Autocomplete a partial progress note |
 | `POST` | `/api/notes/refine` | Refine/rewrite a progress note |
-| `GET` | `/api/summary/daily` | Generate a daily team activity summary |
+| `GET` | `/api/summary/daily` | Generate a daily team activity summary (project-aware) |
 | `GET` | `/api/tasks/:taskId/progress` | Generate a progress report for a task |
