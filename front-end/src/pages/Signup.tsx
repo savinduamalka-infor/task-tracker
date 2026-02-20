@@ -113,7 +113,7 @@ export default function Signup() {
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="John Doe"
+                          placeholder="Alex Turin"
                           {...field}
                           disabled={isLoading}
                         />
