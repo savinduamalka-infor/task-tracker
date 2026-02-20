@@ -22,13 +22,13 @@ beforeEach(async () => {
   await TaskModel.deleteMany({});
 });
 
-describe("Task API", () => {
+describe("", () => {
 
   // CREATE TASK
   
   describe("POST /api/tasks", () => {
 
-    it("should create task successfully (Lead)", async () => {
+    it("create task successfully (Lead)", async () => {
       mockUser = {
         id: "507f191e810c19729de860ea",
         role: "Lead",
@@ -48,7 +48,7 @@ describe("Task API", () => {
       expect(res.body.title).toBe("Test Task");
     });
 
-        it("should create task successfully (Member)", async () => {
+        it("create task successfully (Member)", async () => {
       mockUser = {
         id: "507f191e810c19729de860ea",
         role: "Member",
@@ -68,7 +68,7 @@ describe("Task API", () => {
       expect(res.body.title).toBe("Test Task");
     });
 
-    it("should allow Lead to assign to another user", async () => {
+    it("allow Lead to assign to another user", async () => {
       mockUser = {
         id: "507f191e810c19729de860ab",
         role: "Lead",
@@ -88,7 +88,7 @@ describe("Task API", () => {
       expect(res.body.assigneeId).toBe("507f191e810c19729de860ac");
     });
 
-    it("should return 403 if Member assigns to others", async () => {
+    it("return 403 if Member assigns to others", async () => {
       mockUser = {
         id: "507f191e810c19729de860ad",
         role: "Member",
@@ -107,7 +107,7 @@ describe("Task API", () => {
       expect(res.status).toBe(403);
     });
 
-    it("should return 400 if user has no team", async () => {
+    it("return 400 if user has no team", async () => {
       mockUser = {
         id: "507f191e810c19729de860ae",
         role: "Lead",
@@ -128,9 +128,9 @@ describe("Task API", () => {
 
   // GET ALL TASKS
 
-  describe("GET /api/tasks", () => {
+  describe("", () => {
 
-    it("should get all tasks", async () => {
+    it("get all tasks", async () => {
       await TaskModel.create({
         title: "Task 1",
         teamId: "team123",
@@ -147,7 +147,7 @@ describe("Task API", () => {
       expect(res.body.length).toBeGreaterThan(0);
     });
 
-    it("should get only main tasks if mainOnly=true", async () => {
+    it("get only main tasks if mainOnly=true", async () => {
       await TaskModel.create({
         title: "Main Task",
         teamId: "team123",
@@ -178,9 +178,9 @@ describe("Task API", () => {
 
   // GET BY ID
 
-  describe("GET /api/tasks/:id", () => {
+  describe("", () => {
 
-    it("should get task by id", async () => {
+    it("get task by id", async () => {
       const task = await TaskModel.create({
         title: "Task 1",
         teamId: "team123",
@@ -197,12 +197,12 @@ describe("Task API", () => {
       expect(res.body.title).toBe("Task 1");
     });
 
-    it("should return 404 if task not found", async () => {
+    it("return 404 if task not found", async () => {
       const res = await request(app).get(`/api/tasks/507f191e810c19729de860eb`);
       expect(res.status).toBe(404);
     });
 
-    it("should allow a member with no team to view a specific task (Current Behavior)", async () => {
+    it("allow a member with no team to view a specific task (Current Behavior)", async () => {
     mockUser = {
       id: "507f191e810c19729de860ea",
       role: "Member",
@@ -227,9 +227,9 @@ describe("Task API", () => {
 
   // UPDATE TASK
 
-  describe("PATCH /api/tasks/:id", () => {
+  describe("", () => {
 
-    it("should update task status", async () => {
+    it("update task status", async () => {
       const task = await TaskModel.create({
         title: "Task 1",
         teamId: "team123",
@@ -248,7 +248,7 @@ describe("Task API", () => {
       expect(res.body.status).toBe("DONE");
     });
 
-    it("should push update with note (assignee)", async () => {
+    it("push update with note (assignee)", async () => {
       mockUser = {
         id: "507f191e810c19729de860ea",
         role: "Member",
@@ -274,7 +274,7 @@ describe("Task API", () => {
       expect(res.body.updates[0].note).toBe("Progress update");
     });
 
-it("should return 403 if a Member attempts to change the assigneeId", async () => {
+it("Member can't attempts to change the assigneeId", async () => {
   mockUser = {
     id: "507f191e810c19729de860ea",
     role: "Member",
@@ -298,7 +298,7 @@ it("should return 403 if a Member attempts to change the assigneeId", async () =
   expect(res.body.error).toBe("Only a Lead can reassign a task");
 });
 
-it("should return 403 if a Member tries to add a note to a task not assigned to them", async () => {
+it("return 403 if a Member tries to add a note to a task not assigned to them", async () => {
   mockUser = {
     id: "507f191e810c19729de860ea",
     role: "Member",
@@ -332,9 +332,9 @@ it("should return 403 if a Member tries to add a note to a task not assigned to 
 
   // DELETE TASK
 
-  describe("DELETE /api/tasks/:id", () => {
+  describe("", () => {
 
-    it("should delete task and subtasks (Lead only)", async () => {
+    it("delete task and subtasks (Lead only)", async () => {
       mockUser = {
         id: "leadId",
         role: "Lead",
@@ -371,7 +371,7 @@ it("should return 403 if a Member tries to add a note to a task not assigned to 
       expect(subtasks.length).toBe(0);
     });
 
-    it("should return 404 if task not found", async () => {
+    it("return 404 if task not found", async () => {
       mockUser = {
         id: "leadId",
         role: "Lead",
@@ -382,7 +382,7 @@ it("should return 403 if a Member tries to add a note to a task not assigned to 
       expect(res.status).toBe(404);
     });
 
-      it("should return 403 if a Member attempts to delete", async () => {
+      it("return 403 if a Member attempts to delete", async () => {
     mockUser.role = "Member";
     
     const task = await TaskModel.create({

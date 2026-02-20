@@ -13,15 +13,15 @@ vi.mock("../middleware/auth.middleware.js", () => ({
   },
 }));
 
-describe("Subtask Controller Integration Tests", () => {
+describe("Subtask Controller", () => {
   const mockUserId = new mongoose.Types.ObjectId().toString();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("POST /api/subtasks/suggest", () => {
-    it("should return 400 if title is whitespace only", async () => {
+  describe("", () => {
+    it("return 400 if title is whitespace only", async () => {
       // FIX: URL matches router.post("/api/subtasks/suggest", ...)
       const res = await request(app)
         .post("/api/subtasks/suggest") 
@@ -31,7 +31,7 @@ describe("Subtask Controller Integration Tests", () => {
       expect(res.body.error).toBe("Title is required");
     });
 
-    it("should return subtasks from the mocked Groq API", async () => {
+    it("return subtasks from the mocked Groq API", async () => {
       const mockData = [{ title: "Subtask 1", description: "Desc 1" }];
       vi.spyOn(llmService, "generateSubtasks").mockResolvedValue(mockData);
 
@@ -44,8 +44,8 @@ describe("Subtask Controller Integration Tests", () => {
     });
   });
 
-  describe("POST /api/subtasks/:parentTaskId", () => {
-    it("should successfully create a subtask inheriting parent metadata", async () => {
+  describe("", () => {
+    it("successfully create a subtask inheriting parent metadata", async () => {
       // Create parent with all required schema fields
       const parent = await TaskModel.create({
         title: "Parent Task",
@@ -66,7 +66,7 @@ describe("Subtask Controller Integration Tests", () => {
       expect(res.body.isSubtask).toBe(true);
     });
 
-    it("should return 404 for a non-existent parent task ID", async () => {
+    it("return 404 for a non-existent parent task ID", async () => {
       const randomId = new mongoose.Types.ObjectId().toString();
       const res = await request(app)
         .post(`/api/subtasks/${randomId}`)

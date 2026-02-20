@@ -21,7 +21,7 @@ beforeEach(async () => {
   await User.deleteMany({});
 });
 
-describe("User API", () => {
+describe("", () => {
   describe("GET /api/me", () => {
     it("should return current user", async () => {
       const res = await request(app).get("/api/me");
@@ -31,7 +31,7 @@ describe("User API", () => {
     });
   });
 
-  describe("GET /api/users", () => {
+  describe("", () => {
     it("should return all users", async () => {
       await User.create({
         _id: "507f191e810c19729de860ea",
@@ -50,7 +50,7 @@ describe("User API", () => {
     });
   });
 
-  describe("GET /api/users/without-team", () => {
+  describe("", () => {
     it("should return users without a team", async () => {
       await User.create({
         _id: "507f191e810c19729de860ea",
@@ -69,7 +69,7 @@ describe("User API", () => {
     });
   });
 
-  describe("GET /api/admin/dashboard", () => {
+  describe("", () => {
     it("should return admin dashboard message", async () => {
       const res = await request(app).get("/api/admin/dashboard");
       expect(res.status).toBe(200);

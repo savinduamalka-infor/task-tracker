@@ -17,7 +17,7 @@ vi.mock("../middleware/auth.middleware.js", () => ({
   },
 }));
 
-describe("GET /api/summary/daily", () => {
+describe("", () => {
   
   beforeEach(() => {
     vi.clearAllMocks();
@@ -32,7 +32,7 @@ describe("GET /api/summary/daily", () => {
     expect(res.body.summary).toMatch(/no task activity/i);
   });
 
-it("should only include tasks updated on the requested date", async () => {
+it("only include tasks updated on the requested date", async () => {
     const teamId = "team-123";
 
     // Task 1: Updated TODAY
@@ -80,7 +80,7 @@ it("should only include tasks updated on the requested date", async () => {
   });
 
 
-  it("should handle server errors gracefully if LLM fails", async () => {
+  it("handle server errors gracefully if LLM fails", async () => {
     // 1. Create a task so the controller doesn't return "No activity" before the LLM call
     await TaskModel.create({
       title: "Error Task",
