@@ -299,9 +299,13 @@ const Index = () => {
         `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members/${memberId}`,
         { method: "DELETE", credentials: "include" }
       );
+      const data = await res.json();
       if (res.ok) {
-        toast({ title: "Success", description: "Member removed successfully" });
+        toast({ title: "Success", description: "Member removed and tasks reassigned to lead" });
         loadTeamMembers();
+        loadTasks();
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to remove member", variant: "destructive" });
       }
     } catch (err) {
       toast({ title: "Error", description: "Failed to remove member", variant: "destructive" });
@@ -593,7 +597,12 @@ const Index = () => {
                     <p className="text-center text-muted-foreground py-8">No team members found.</p>
                   ) : (
                     <div className="grid gap-3">
-                      {teamMembers.map((member) => (
+                      {teamMembers.map((member) => {
+                        const isTeamLead = member._id === currentUser.teamId && teamMembers.find(m => m._id === member._id)?.role === "Lead";
+                        // Find team creator from team data
+                        const isCreator = allTeams.find(t => t._id === currentUser.teamId)?.createdBy === member._id;
+                        
+                        return (
                         <div key={member._id} className="border rounded-lg p-4 flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -608,7 +617,7 @@ const Index = () => {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">{member.role || "Member"}</span>
-                            {currentUser.role === "Lead" && (
+                            {currentUser.role === "Lead" && member._id !== currentUser.id && (
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -620,7 +629,7 @@ const Index = () => {
                             )}
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   )}
                 </>

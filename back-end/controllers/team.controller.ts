@@ -144,6 +144,13 @@ export const removeTeamMember = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Member not found in team" });
     }
 
+    if (memberId === team.createdBy) {
+      return res.status(400).json({ 
+        message: "Team lead cannot be removed",
+        suggestion: "Transfer team ownership first or delete the team"
+      });
+    }
+
     const { TaskModel } = await import("../models/task.model.js");
     const { AssignRequestModel } = await import("../models/assignRequest.model.js");
     const JoinRequest = (await import("../models/joinRequest.model.js")).default;

@@ -609,7 +609,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
               <div className="space-y-3">
                 {[...task.updates].reverse().map((update, i) => {
                   const author = getUserById(update.updatedBy);
-                  const initials = author?.name.split(" ").map((n) => n[0]).join("") ?? "?";
+                  const initials = author?.name?.split(" ").map((n) => n[0]).join("") ?? "?";
                   const completedSubs = (update.subtaskCompletions ?? [])
                     .map((id) => allSubtasks.find((st) => st.id === id))
                     .filter(Boolean);
@@ -621,7 +621,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium">{author?.name}</span>
+                          <span className="text-sm font-medium">{author?.name || "Former Member"}</span>
                           <span className="text-xs text-muted-foreground ml-auto">
                             {format(parseISO(update.date), "MMM d")}
                           </span>
