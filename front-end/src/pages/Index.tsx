@@ -250,9 +250,10 @@ const Index = () => {
       await taskApi.update(taskId, updatePayload);
       toast({ title: "Status Updated", description: `Task moved to ${newStatus.replace("_", " ")}.` });
       loadTasks();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update task status:", error);
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      const errorMsg = error.response?.data?.error || "Failed to update status";
+      toast({ title: "Error", description: errorMsg, variant: "destructive" });
       loadTasks();
     }
   };
