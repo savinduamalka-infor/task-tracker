@@ -5,11 +5,12 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import app from "../app";
 import Team from "../models/team.model";
 import { User } from "../models/user.model";
+import { TaskModel } from "../models/task.model";
 
 //  Mock authentication middleware
 let mockUser = {
   id: "507f191e810c19729de860ea",
-  role: "Admin",
+  role: "Lead",
 };
 
 vi.mock("../middleware/auth.middleware.js", () => ({
@@ -199,6 +200,72 @@ describe("Team API", () => {
         .delete(`/api/teams/${team._id}/members/${memberId}`);
 
       expect(res.status).toBe(404);
+    });
+
+    it("not allow removing the team lead", async () => {
+      const team = await Team.create({
+        name: "Lead Safety Team",
+        createdBy: mockUser.id,
+        members: [mockUser.id],
+      });
+
+      const res = await request(app)
+        .delete(`/api/teams/${team._id}/members/${mockUser.id}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/Team lead cannot be removed/i);
+    });
+
+    it("should automatically reassign member tasks to lead when member is removed", async () => {
+      const memberId = new mongoose.Types.ObjectId().toString();
+      const team = await Team.create({
+        name: "Reassignment Team",
+        createdBy: mockUser.id,
+        members: [mockUser.id, memberId],
+      });
+
+      // Create a task assigned to the member
+      const task = await TaskModel.create({
+        title: "Member Task",
+        assigneeId: memberId,
+        teamId: team._id.toString(),
+        reporterId: mockUser.id
+      });
+
+      const res = await request(app)
+        .delete(`/api/teams/${team._id}/members/${memberId}`);
+
+      expect(res.status).toBe(200);
+
+      // Verify task now belongs to the lead
+      const updatedTask = await TaskModel.findById(task._id);
+      expect(updatedTask?.assigneeId).toBe(mockUser.id);
+    });
+
+    it("should prevent deleting a team if it still has active tasks", async () => {
+      const team = await Team.create({
+        name: "Active Task Team",
+        createdBy: mockUser.id,
+        members: [mockUser.id],
+      });
+
+      // Create an active task for this team
+      await TaskModel.create({
+        title: "Blocking Task",
+        assigneeId: mockUser.id,
+        teamId: team._id.toString(),
+        reporterId: mockUser.id
+      });
+
+      const res = await request(app)
+        .delete(`/api/teams/${team._id}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/Cannot delete team with existing tasks/i);
+      
+      // Verify team still exists
+      const checkTeam = await Team.findById(team._id);
+      expect(checkTeam).not.toBeNull();
     });
 
   });
