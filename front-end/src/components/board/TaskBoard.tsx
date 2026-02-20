@@ -2,7 +2,6 @@ import { useState } from "react";
 import { TaskStatus } from "@/lib/types";
 import { Task, User } from "@/lib/types";
 import { TaskCard } from "./TaskCard";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const columns: { status: TaskStatus; label: string }[] = [
   { status: "TODO", label: "To Do" },
@@ -67,7 +66,7 @@ export function TaskBoard({ onTaskClick, tasks, users, onTaskDrop }: TaskBoardPr
         return (
           <div
             key={col.status}
-            className={`flex flex-col rounded-lg transition-colors duration-200 p-2 ${
+            className={`flex flex-col min-w-0 rounded-lg transition-colors duration-200 p-2 ${
               isDragOver
                 ? "bg-primary/5 ring-2 ring-primary/20"
                 : ""
@@ -83,8 +82,8 @@ export function TaskBoard({ onTaskClick, tasks, users, onTaskDrop }: TaskBoardPr
                 {colTasks.length}
               </span>
             </div>
-            <ScrollArea className="flex-1">
-              <div className="space-y-2 pr-1 pb-2 min-h-[60px]">
+            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-220px)] scrollbar-thin">
+              <div className="space-y-3 pb-2 pt-0.5 min-h-[60px]">
                 {colTasks.length === 0 ? (
                   <div className={`text-center py-8 text-xs text-muted-foreground border border-dashed rounded-lg transition-colors ${
                     isDragOver ? "border-primary/40 bg-primary/5" : ""
@@ -97,14 +96,14 @@ export function TaskBoard({ onTaskClick, tasks, users, onTaskDrop }: TaskBoardPr
                       key={task.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, task.id)}
-                      className="cursor-grab active:cursor-grabbing"
+                      className="cursor-grab active:cursor-grabbing w-full min-w-0"
                     >
                       <TaskCard task={task} onClick={() => onTaskClick(task.id)} users={users} />
                     </div>
                   ))
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         );
       })}
