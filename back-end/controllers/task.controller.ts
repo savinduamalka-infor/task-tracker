@@ -18,6 +18,11 @@ export async function createTask(req: Request, res: Response) {
       return;
     }
 
+    if (req.body.teamId && req.body.teamId !== teamId) {
+      res.status(403).json({ error: "You can only create tasks for your own team" });
+      return;
+    }
+
     if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
       res.status(403).json({ error: "Members can only assign tasks to themselves" });
       return;
