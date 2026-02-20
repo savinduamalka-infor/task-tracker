@@ -1,14 +1,12 @@
 import { Router } from "express";
 import { protectedRoute } from "../middleware/auth.middleware.js";
-import { getMe, getAllUsers } from "../controllers/user.controller.js";
+import { getMe, getAllUsers, getUsersWithoutTeam } from "../controllers/user.controller.js";
 import { getSession, signOut } from "../controllers/auth.controller.js";
 import { createTask, getAllTasks, getTaskById, updateTask, deleteTask } from "../controllers/task.controller.js";
 import { suggestSubtasks, addSubtaskToParent, getSubtasksByParent } from "../controllers/subtask.controller.js";
 import { getDailySummary } from "../controllers/summary.controller.js";
 import { autocompleteNoteHandler, refineNoteHandler } from "../controllers/note.controller.js";
 import { getTaskProgress } from "../controllers/progress.controller.js";
-
-import {  getUsersWithoutTeam } from "../controllers/user.controller.js";
 import { createTeam, addTeamMember, removeTeamMember, getTeamMembers, getAllTeams, getTeamById, updateTeam, deleteTeam } from "../controllers/team.controller.js";
 import { createJoinRequest, getMyJoinRequests, getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from "../controllers/joinRequest.controller.js";
 import { createAssignRequest, getMyAssignRequests, getTeamAssignRequests, approveAssignRequest, rejectAssignRequest } from "../controllers/assignRequest.controller.js";
@@ -18,6 +16,7 @@ router.get("/api/auth/session", getSession);
 router.post("/api/auth/sign-out", signOut);
 router.get("/api/me", protectedRoute, getMe);
 router.get("/api/users", protectedRoute, getAllUsers);
+router.get("/api/users/without-team", protectedRoute, getUsersWithoutTeam);
 router.get("/api/teams", protectedRoute, getAllTeams);
 router.post("/api/teams", protectedRoute, createTeam);
 router.get("/api/teams/:teamId", protectedRoute, getTeamById);
@@ -25,11 +24,7 @@ router.put("/api/teams/:teamId", protectedRoute, updateTeam);
 router.delete("/api/teams/:teamId", protectedRoute, deleteTeam);
 router.post("/api/teams/:teamId/members", protectedRoute, addTeamMember);
 router.delete("/api/teams/:teamId/members/:memberId", protectedRoute, removeTeamMember);
-router.get(
-	"/api/users/without-team",
-	protectedRoute,
-	getUsersWithoutTeam,
-);
+
 router.get("/api/teams/:teamId/members", protectedRoute, getTeamMembers);
 
 // Join request routes

@@ -192,6 +192,19 @@ const Index = () => {
   };
 
   const handleTaskDrop = (taskId: string, newStatus: TaskStatus) => {
+    const task = tasks.find((t) => t.id === taskId);
+    const isAssignee = task?.assigneeId === currentUser.id;
+    const isLead = currentRole === "Lead";
+
+    if (!isAssignee && !isLead) {
+      toast({
+        title: "Permission Denied",
+        description: "Only the task assignee or a Lead can change the task status.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (newStatus === "BLOCKED") {
       setPendingDrop({ taskId, newStatus });
       setBlockedReason("");
@@ -286,9 +299,13 @@ const Index = () => {
         `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members/${memberId}`,
         { method: "DELETE", credentials: "include" }
       );
+      const data = await res.json();
       if (res.ok) {
-        toast({ title: "Success", description: "Member removed successfully" });
+        toast({ title: "Success", description: "Member removed and tasks reassigned to lead" });
         loadTeamMembers();
+        loadTasks();
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to remove member", variant: "destructive" });
       }
     } catch (err) {
       toast({ title: "Error", description: "Failed to remove member", variant: "destructive" });
@@ -369,6 +386,14 @@ const Index = () => {
       console.error("Failed to load join requests:", err);
     }
   };
+  useEffect(() => {
+    if (!currentUser?.teamId && currentUser?.id && currentUser.role !== "Lead") {
+      const interval = setInterval(() => {
+        loadMyJoinRequests();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser?.teamId, currentUser?.id, currentUser?.role]);
 
   const loadPendingJoinRequests = async () => {
     if (!currentUser?.teamId) return;
@@ -580,7 +605,12 @@ const Index = () => {
                     <p className="text-center text-muted-foreground py-8">No team members found.</p>
                   ) : (
                     <div className="grid gap-3">
-                      {teamMembers.map((member) => (
+                      {teamMembers.map((member) => {
+                        const isTeamLead = member._id === currentUser.teamId && teamMembers.find(m => m._id === member._id)?.role === "Lead";
+                        // Find team creator from team data
+                        const isCreator = allTeams.find(t => t._id === currentUser.teamId)?.createdBy === member._id;
+                        
+                        return (
                         <div key={member._id} className="border rounded-lg p-4 flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -595,7 +625,7 @@ const Index = () => {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">{member.role || "Member"}</span>
-                            {currentUser.role === "Lead" && (
+                            {currentUser.role === "Lead" && member._id !== currentUser.id && (
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -607,7 +637,7 @@ const Index = () => {
                             )}
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   )}
                 </>
@@ -627,30 +657,47 @@ const Index = () => {
                     </p>
                   </div>
 
-                  {myJoinRequests.filter((r) => r.status === "pending").length > 0 && (
+                  {myJoinRequests.filter((r) => r.status === "pending" || r.status === "rejected").length > 0 && (
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                        Your Pending Requests
+                        Your Join Requests
                       </h4>
                       <div className="grid gap-2">
                         {myJoinRequests
-                          .filter((r) => r.status === "pending")
+                          .filter((r) => r.status === "pending" || r.status === "rejected")
                           .map((r) => (
                             <div
                               key={r._id}
-                              className="border rounded-lg p-4 flex items-center justify-between bg-muted/50"
+                              className={`border rounded-lg p-4 flex items-center justify-between ${
+                                r.status === "rejected" ? "bg-destructive/5 border-destructive/20" : "bg-muted/50"
+                              }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <Clock className="h-5 w-5 text-primary" />
+                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                                  r.status === "rejected" ? "bg-destructive/10" : "bg-primary/10"
+                                }`}>
+                                  {r.status === "rejected" ? (
+                                    <X className="h-5 w-5 text-destructive" />
+                                  ) : (
+                                    <Clock className="h-5 w-5 text-primary" />
+                                  )}
                                 </div>
                                 <div>
                                   <p className="font-medium">{r.teamName}</p>
-                                  <p className="text-sm text-muted-foreground">Waiting for approval</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {r.status === "rejected" ? "Request rejected" : "Waiting for approval"}
+                                  </p>
                                 </div>
                               </div>
-                              <Badge variant="secondary" className="gap-1.5">
-                                <Clock className="h-3 w-3" /> Pending
+                              <Badge
+                                variant={r.status === "rejected" ? "destructive" : "secondary"}
+                                className="gap-1.5"
+                              >
+                                {r.status === "rejected" ? (
+                                  <><X className="h-3 w-3" /> Rejected</>
+                                ) : (
+                                  <><Clock className="h-3 w-3" /> Pending</>
+                                )}
                               </Badge>
                             </div>
                           ))}
@@ -671,9 +718,6 @@ const Index = () => {
                         {allTeams.map((team) => {
                           const hasPending = myJoinRequests.some(
                             (r) => r.teamId === team._id && r.status === "pending"
-                          );
-                          const wasRejected = myJoinRequests.some(
-                            (r) => r.teamId === team._id && r.status === "rejected"
                           );
                           return (
                             <div
@@ -703,7 +747,7 @@ const Index = () => {
                                   className="gap-1.5"
                                 >
                                   <Send className="h-4 w-4" />
-                                  {sendingJoinRequest === team._id ? "Sending..." : wasRejected ? "Request Again" : "Request to Join"}
+                                  {sendingJoinRequest === team._id ? "Sending..." : "Request to Join"}
                                 </Button>
                               )}
                             </div>
