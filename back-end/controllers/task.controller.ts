@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { TaskModel } from "../models/task.model.js";
+import ProjectModel from "../models/project.model.js";
 
 export async function createTask(req: Request, res: Response) {
   try {
@@ -26,6 +27,19 @@ export async function createTask(req: Request, res: Response) {
     if (user.role === "Member" && req.body.assigneeId && req.body.assigneeId !== user.id) {
       res.status(403).json({ error: "Members can only assign tasks to themselves" });
       return;
+    }
+    // Validate projectId belongs to the same team
+    const projectId = req.body.projectId;
+    if (projectId) {
+      const project = await ProjectModel.findById(projectId);
+      if (!project) {
+        res.status(400).json({ error: "Project not found" });
+        return;
+      }
+      if (project.teamId !== teamId) {
+        res.status(400).json({ error: "Selected project does not belong to this team" });
+        return;
+      }
     }
 
     const task = await TaskModel.create({
