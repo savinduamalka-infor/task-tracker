@@ -144,16 +144,46 @@ export const removeTeamMember = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Member not found in team" });
     }
 
+    const { TaskModel } = await import("../models/task.model.js");
+    const { AssignRequestModel } = await import("../models/assignRequest.model.js");
+    const JoinRequest = (await import("../models/joinRequest.model.js")).default;
+
+    // Reassign all tasks to team lead
+    await TaskModel.updateMany(
+      { assigneeId: memberId, teamId },
+      { $set: { assigneeId: team.createdBy } }
+    );
+
+    // Remove from helperIds arrays
+    await TaskModel.updateMany(
+      { helperIds: memberId, teamId },
+      { $pull: { helperIds: memberId } }
+    );
+
+    // Cancel pending assign requests
+    await AssignRequestModel.updateMany(
+      { requesterId: memberId, teamId, status: "pending" },
+      { $set: { status: "rejected" } }
+    );
+
+    // Cancel pending join requests
+    await JoinRequest.updateMany(
+      { userId: memberId, teamId, status: "pending" },
+      { $set: { status: "rejected" } }
+    );
+
+    // Remove from team
     team.members = team.members.filter((m: string) => m !== memberId);
     await team.save();
 
+    // Clear user's teamId
     const db = mongoose.connection.db!;
     await db.collection("user").updateOne(
       { _id: new mongoose.Types.ObjectId(memberId) },
       { $set: { teamId: null } }
     );
 
-    res.status(200).json({ message: "Member removed", team });
+    res.status(200).json({ message: "Member removed and tasks reassigned to lead", team });
   } catch (error) {
     console.error("Remove member error:", error);
     res.status(500).json({ message: "Server error", error });
@@ -228,6 +258,17 @@ export const deleteTeam = async (req: Request, res: Response) => {
 
     if (user.role !== "Lead" && team.createdBy !== user.id) {
       return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const { TaskModel } = await import("../models/task.model.js");
+    const taskCount = await TaskModel.countDocuments({ teamId });
+    
+    if (taskCount > 0) {
+      return res.status(400).json({ 
+        message: "Cannot delete team with existing tasks",
+        taskCount,
+        suggestion: "Please delete or reassign all tasks first"
+      });
     }
 
     const db = mongoose.connection.db!;
