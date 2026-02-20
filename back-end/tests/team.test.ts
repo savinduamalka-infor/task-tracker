@@ -39,7 +39,7 @@ describe("Team API", () => {
       expect(res.body.team.name).toBe("Dev Team");
     });
 
-    it("should return 400 if name missing", async () => {
+    it("cant create team if name missing", async () => {
       const res = await request(app)
         .post("/api/teams")
         .send({});
@@ -47,7 +47,7 @@ describe("Team API", () => {
       expect(res.status).toBe(400);
     });
 
-    it("should return 400 if team already exists", async () => {
+    it("cant create team if team already exists", async () => {
 
       await request(app)
         .post("/api/teams")
@@ -67,7 +67,7 @@ describe("Team API", () => {
   // Get team members - GET /api/teams/:teamId/members
   describe("", () => {
 
-    it("should return team members", async () => {
+    it("return team members", async () => {
       const team = await Team.create({
         name: "Test",
         createdBy: "507f191e810c19729de860ea",
@@ -81,7 +81,7 @@ describe("Team API", () => {
       expect(res.body.teamName).toBe("Test");
     });
 
-    it("should return 404 if team not found", async () => {
+    it("return 404 if team not found", async () => {
       const fakeId = new mongoose.Types.ObjectId();
 
       const res = await request(app)
@@ -95,7 +95,7 @@ describe("Team API", () => {
   // Add team member - POST /api/teams/:teamId/members
   describe("", () => {
 
-    it("should add member to team", async () => {
+    it("add member to team", async () => {
       const member = await User.create({
         _id: new mongoose.Types.ObjectId().toString(),
         name: "John",
@@ -117,7 +117,7 @@ describe("Team API", () => {
       expect(res.body.message).toBe("Member added");
     });
 
-    it("should return 400 if member already in team", async () => {
+    it("not allow to add member if member already in team", async () => {
       const memberId = new mongoose.Types.ObjectId().toString();
 
       const team = await Team.create({
@@ -133,7 +133,7 @@ describe("Team API", () => {
       expect(res.status).toBe(400);
     });
 
-    it("should return 404 if team not found", async () => {
+    it("return 404 if team not found", async () => {
       const fakeId = new mongoose.Types.ObjectId();
 
       const res = await request(app)
@@ -143,7 +143,7 @@ describe("Team API", () => {
       expect(res.status).toBe(404);
     });
 
-    it("should return 403 if user is not admin or creator", async () => {
+    it("cant add member if user is not lead", async () => {
       const originalUser = { ...mockUser };
       // Change user to normal member
       mockUser = {
@@ -169,7 +169,7 @@ describe("Team API", () => {
 
   // Remove team member - DELETE /api/teams/:teamId/members/:memberId
   describe("", () => {
-    it("should remove member from team", async () => {
+    it("remove member from team", async () => {
       const memberId = new mongoose.Types.ObjectId().toString();
 
       const team = await Team.create({
@@ -182,10 +182,10 @@ describe("Team API", () => {
         .delete(`/api/teams/${team._id}/members/${memberId}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.message).toBe("Member removed");
+      expect(res.body.message).toBe("Member removed and tasks reassigned to lead");
     });
 
-    it("should return 404 if member not in team", async () => {
+    it("return 404 if member not in team", async () => {
       const memberId = new mongoose.Types.ObjectId().toString();
 
       const team = await Team.create({

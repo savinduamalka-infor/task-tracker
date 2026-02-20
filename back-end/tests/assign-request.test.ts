@@ -210,7 +210,7 @@ beforeEach(async () => {
     expect(res.status).toBe(404);
   });
 
-  it("use $addToSet to prevent duplicate helper IDs on task", async () => {
+  it("prevent duplicate helper IDs on task", async () => {
     const localTeamId = new mongoose.Types.ObjectId();
     // Lead is current user
     await Team.create({ _id: localTeamId, name: "Z", createdBy: mockUserId });
@@ -250,36 +250,25 @@ beforeEach(async () => {
     expect(res.body.request.teamId).toBe(validTeamId);
   });
 
-//   it("forbid AssignRequest creation if the user's team was deleted", async () => {
-//     // 1. Setup: A task exists, but we simulate a team deletion by nullifying the user's teamId
-//     const task = await TaskModel.create({
-//       title: "Task with no team",
-//       assigneeId: mockUserId,
-//       reporterId: otherUserId,
-//       teamId: validTeamId
-//     });
+it("should fail if a Lead tries to send a request to join a team", async () => {
+    
+  const task = await TaskModel.create({
+    _id: new mongoose.Types.ObjectId(),
+    title: "Project Alpha",
+    assigneeId: otherUserId, 
+    reporterId: mockUserId,
+    teamId: validTeamId
+  });
 
-//     // 2. Simulate Team Deletion: Remove the teamId from the actual user document in DB
-//     await mongoose.connection.db!.collection("user").updateOne(
-//       { _id: new mongoose.Types.ObjectId(mockUserId) },
-//       { $unset: { teamId: "" } }
-//     );
-
-//     // 3. Act: Attempt to create an assign request
-//     // We also override the req.user teamId to be undefined to mimic the post-deletion state
-//     const res = await request(app)
-//       .post("/api/assign-requests")
-//       .send({ 
-//         taskId: task._id, 
-//         note: "I shouldn't be able to do this" 
-//       });
-
-//     /** * 4. Assert: 
-//      * Based on your logic, if the DB lookup finds no teamId, 
-//      * it should return 400 "You must belong to a team before creating tasks"
-//      */
-//     expect(res.status).toBe(400);
-//     expect(res.body.error || res.body.message).toMatch(/must belong to a team/i);
-//   });
+  const res = await request(app)
+    .post("/api/assign-requests")
+    .send({ 
+      taskId: task._id,
+      note: "I am a Lead trying to request help for a task I'm not assigned to" 
+    });
+  expect(res.status).toBe(403);
+  
+  expect(res.body.message).toMatch(/Only the task assignee can request additional help/i);
+});
 
 });
