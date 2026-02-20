@@ -26,6 +26,7 @@ export interface CreateTaskDTO {
   startDate: string;
   dueDate: string;
   teamId: string;
+  projectId?: string;
   updates?: { note: string };
 }
 
@@ -78,6 +79,16 @@ export const joinRequestApi = {
 export const teamApi = {
   getAll: () => api.get("/api/teams"),
   getMembers: (teamId: string) => api.get(`/api/teams/${teamId}/members`),
+};
+
+export const projectApi = {
+  getByTeam: (teamId: string) => api.get(`/api/teams/${teamId}/projects`),
+  getById: (projectId: string) => api.get(`/api/projects/${projectId}`),
+  create: (teamId: string, data: { name: string; description?: string }) =>
+    api.post(`/api/teams/${teamId}/projects`, data),
+  update: (projectId: string, data: { name?: string; description?: string }) =>
+    api.patch(`/api/projects/${projectId}`, data),
+  delete: (projectId: string) => api.delete(`/api/projects/${projectId}`),
 };
 
 export const assignRequestApi = {
