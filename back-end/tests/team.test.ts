@@ -27,8 +27,8 @@ beforeEach(async () => {
 
 describe("Team API", () => {
 
-  // Create team
-  describe("POST /api/teams", () => {
+  // Create team - POST /api/teams
+  describe("", () => {
 
     it("should create team successfully", async () => {
       const res = await request(app)
@@ -64,8 +64,8 @@ describe("Team API", () => {
 
   });
 
-  // Get team members
-  describe("GET /api/teams/:teamId/members", () => {
+  // Get team members - GET /api/teams/:teamId/members
+  describe("", () => {
 
     it("should return team members", async () => {
       const team = await Team.create({
@@ -92,8 +92,8 @@ describe("Team API", () => {
 
   });
 
-  // Add team member
-  describe("POST /api/teams/:teamId/members", () => {
+  // Add team member - POST /api/teams/:teamId/members
+  describe("", () => {
 
     it("should add member to team", async () => {
       const member = await User.create({
@@ -167,8 +167,8 @@ describe("Team API", () => {
 
   });
 
-  // Remove team member
-  describe("DELETE /api/teams/:teamId/members/:memberId", () => {
+  // Remove team member - DELETE /api/teams/:teamId/members/:memberId
+  describe("", () => {
     it("should remove member from team", async () => {
       const memberId = new mongoose.Types.ObjectId().toString();
 
@@ -201,6 +201,52 @@ describe("Team API", () => {
       expect(res.status).toBe(404);
     });
 
+  });
+
+  // Cross-Functional Integration (Assign Requests)
+  describe("", () => {
+    
+    
+
+    it("B. Lead Permission Consistency: Old lead loses approval rights after team deletion/transfer", async () => {
+      // 1. Setup: Lead creates a team and a help request exists
+      const localTeamId = new mongoose.Types.ObjectId();
+      const memberId = new mongoose.Types.ObjectId().toString();
+      const leadId = new mongoose.Types.ObjectId().toString();
+
+      await Team.create({ 
+        _id: localTeamId, 
+        name: "Transfer Team", 
+        createdBy: leadId, 
+        members: [leadId, memberId] 
+      });
+
+      const task = await TaskModel.create({
+        title: "Lead Check Task", assigneeId: memberId, teamId: localTeamId, reporterId: leadId
+      });
+
+      const assignReq = await AssignRequestModel.create({
+        taskId: task._id, requesterId: memberId, teamId: localTeamId, status: "pending", note: "Help!"
+      });
+
+      // 2. Action: Delete the team (simulating lead losing control)
+      await Team.findByIdAndDelete(localTeamId);
+
+      // 3. Act: Old lead tries to approve the request
+      const originalUser = mockUser;
+      mockUser = { id: leadId, role: "Lead" } as any;
+
+      const res = await request(app)
+        .patch(`/api/assign-requests/${assignReq._id}/approve`)
+        .send({ newHelperId: leadId });
+
+      // 4. Assert: Expect 404 (Team not found) or 403 (Forbidden)
+      // Since Team.findById(request.teamId) will now return null
+      expect(res.status).toBe(404);
+      expect(res.body.message).toMatch(/Team not found/i);
+
+      mockUser = originalUser;
+    });
   });
 
 });
