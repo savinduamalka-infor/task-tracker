@@ -386,6 +386,14 @@ const Index = () => {
       console.error("Failed to load join requests:", err);
     }
   };
+  useEffect(() => {
+    if (!currentUser?.teamId && currentUser?.id && currentUser.role !== "Lead") {
+      const interval = setInterval(() => {
+        loadMyJoinRequests();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser?.teamId, currentUser?.id, currentUser?.role]);
 
   const loadPendingJoinRequests = async () => {
     if (!currentUser?.teamId) return;
@@ -649,30 +657,47 @@ const Index = () => {
                     </p>
                   </div>
 
-                  {myJoinRequests.filter((r) => r.status === "pending").length > 0 && (
+                  {myJoinRequests.filter((r) => r.status === "pending" || r.status === "rejected").length > 0 && (
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                        Your Pending Requests
+                        Your Join Requests
                       </h4>
                       <div className="grid gap-2">
                         {myJoinRequests
-                          .filter((r) => r.status === "pending")
+                          .filter((r) => r.status === "pending" || r.status === "rejected")
                           .map((r) => (
                             <div
                               key={r._id}
-                              className="border rounded-lg p-4 flex items-center justify-between bg-muted/50"
+                              className={`border rounded-lg p-4 flex items-center justify-between ${
+                                r.status === "rejected" ? "bg-destructive/5 border-destructive/20" : "bg-muted/50"
+                              }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <Clock className="h-5 w-5 text-primary" />
+                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                                  r.status === "rejected" ? "bg-destructive/10" : "bg-primary/10"
+                                }`}>
+                                  {r.status === "rejected" ? (
+                                    <X className="h-5 w-5 text-destructive" />
+                                  ) : (
+                                    <Clock className="h-5 w-5 text-primary" />
+                                  )}
                                 </div>
                                 <div>
                                   <p className="font-medium">{r.teamName}</p>
-                                  <p className="text-sm text-muted-foreground">Waiting for approval</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {r.status === "rejected" ? "Request rejected" : "Waiting for approval"}
+                                  </p>
                                 </div>
                               </div>
-                              <Badge variant="secondary" className="gap-1.5">
-                                <Clock className="h-3 w-3" /> Pending
+                              <Badge
+                                variant={r.status === "rejected" ? "destructive" : "secondary"}
+                                className="gap-1.5"
+                              >
+                                {r.status === "rejected" ? (
+                                  <><X className="h-3 w-3" /> Rejected</>
+                                ) : (
+                                  <><Clock className="h-3 w-3" /> Pending</>
+                                )}
                               </Badge>
                             </div>
                           ))}
@@ -693,9 +718,6 @@ const Index = () => {
                         {allTeams.map((team) => {
                           const hasPending = myJoinRequests.some(
                             (r) => r.teamId === team._id && r.status === "pending"
-                          );
-                          const wasRejected = myJoinRequests.some(
-                            (r) => r.teamId === team._id && r.status === "rejected"
                           );
                           return (
                             <div
@@ -725,7 +747,7 @@ const Index = () => {
                                   className="gap-1.5"
                                 >
                                   <Send className="h-4 w-4" />
-                                  {sendingJoinRequest === team._id ? "Sending..." : wasRejected ? "Request Again" : "Request to Join"}
+                                  {sendingJoinRequest === team._id ? "Sending..." : "Request to Join"}
                                 </Button>
                               )}
                             </div>
