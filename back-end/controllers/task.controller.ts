@@ -123,6 +123,12 @@ export async function updateTask(req: Request, res: Response) {
         res.status(403).json({ error: "Only a Lead can reassign a task" });
         return;
       }
+
+      if (String(targetTask.assigneeId) === String(updateData.assigneeId)) {
+        res.status(400).json({ error: "Task is already assigned to this user" });
+        return;
+      }
+
     }
 
     if (updateData.status !== undefined) {

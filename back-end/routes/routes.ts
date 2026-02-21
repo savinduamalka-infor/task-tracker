@@ -40,7 +40,7 @@ router.get("/api/tasks", protectedRoute, getAllTasks);
 router.get("/api/tasks/:id", protectedRoute, getTaskById);
 router.put("/api/tasks/:id", protectedRoute, updateTask);
 router.delete("/api/tasks/:id", protectedRoute, deleteTask);
-
+router.patch("/api/tasks/:id", protectedRoute, updateTask);
 router.post("/api/subtasks/suggest", protectedRoute, suggestSubtasks);
 router.post("/api/subtasks/:parentTaskId", protectedRoute, addSubtaskToParent);
 router.get("/api/subtasks/:parentTaskId", protectedRoute, getSubtasksByParent);

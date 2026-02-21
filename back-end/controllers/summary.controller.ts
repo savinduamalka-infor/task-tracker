@@ -8,6 +8,7 @@ export async function getDailySummary(req: Request, res: Response) {
   try {
     const user = req.user!;
     const { date } = req.query;
+    const isLead = user.role === "Lead";
 
     const dbConn = mongoose.connection.db!;
     const dbUser = await dbConn.collection("user").findOne(
@@ -31,7 +32,7 @@ export async function getDailySummary(req: Request, res: Response) {
         { updatedAt: { $gte: startOfDay, $lte: endOfDay } },
       ],
     };
-    if (teamId) {
+    if (isLead && teamId) {
       taskFilter.teamId = teamId;
     } else {
       taskFilter.assigneeId = user.id;
@@ -44,6 +45,13 @@ export async function getDailySummary(req: Request, res: Response) {
         summary: "No task activity found for this date. The team may have had a day off or updates haven't been submitted yet.",
         date: targetDate.toISOString().split("T")[0],
         taskCount: 0,
+      });
+      return;
+    }
+
+    if(!isLead){
+      res.status(403).json({
+        error: "only leads can access the dily summary."
       });
       return;
     }

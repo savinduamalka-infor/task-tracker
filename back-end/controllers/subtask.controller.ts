@@ -6,7 +6,7 @@ export async function suggestSubtasks(req: Request, res: Response) {
   try {
     const { title, description } = req.body;
     
-    if (!title) {
+    if (!title || !title.trim()) {
       res.status(400).json({ error: "Title is required" });
       return;
     }
