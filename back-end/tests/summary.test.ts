@@ -6,21 +6,27 @@ import { TaskModel } from "../models/task.model";
 import * as llmService from "../services/llm.service";
 
 const mockUserId = new mongoose.Types.ObjectId().toString();
+const otherUserId = new mongoose.Types.ObjectId().toString();
+const mockTeamId = "team-123";
+
+let activeUser = { id: mockUserId, teamId: mockTeamId, role: "Lead" };
 
 vi.mock("../middleware/auth.middleware.js", () => ({
   protectedRoute: (req: any, res: any, next: any) => {
-    req.user = { 
-      id: mockUserId, 
-      teamId: "team-123" 
-    };
-    next();
+    
+      req.user = activeUser;
+      next();
+    
+    
   },
 }));
 
-describe("", () => {
+describe("Daily Summary Logic Tests", () => {
   
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset user to default Lead state
+    activeUser = { id: mockUserId, teamId: mockTeamId, role: "Lead" };
   });
 
   it("should return no activity if no tasks exist for that date", async () => {
@@ -31,6 +37,52 @@ describe("", () => {
     expect(res.status).toBe(200);
     expect(res.body.summary).toMatch(/no task activity/i);
   });
+
+  it("should allow a Lead to get the full AI summary", async () => {
+      activeUser = { id: mockUserId, teamId: mockTeamId, role: "Lead" };
+      
+      await TaskModel.create({
+        title: "Lead Task",
+        teamId: mockTeamId,
+        assigneeId: mockUserId,
+        reporterId: mockUserId,
+        updatedAt: new Date(),
+      });
+
+      const llmSpy = vi.spyOn(llmService, "generateDailySummary").mockResolvedValue("AI SUMMARY CONTENT");
+
+      const res = await request(app).get("/api/summary/daily");
+
+      expect(res.status).toBe(200);
+      expect(res.body.summary).toBe("AI SUMMARY CONTENT");
+      expect(llmSpy).toHaveBeenCalled(); 
+    });
+
+it("should NOT allow Members to get AI daily summary", async () => {
+  activeUser = { id: mockUserId, teamId: mockTeamId, role: "Member" };
+
+  await TaskModel.create({
+    title: "Member Task",
+    teamId: mockTeamId,
+    reporterId: mockUserId,
+    assigneeId: mockUserId,
+    status: "TODO",
+    priority: "Medium",
+    updates: [{
+      date: new Date(),
+      note: "Worked on feature",
+      updatedBy: mockUserId
+    }]
+  });
+
+  const llmSpy = vi.spyOn(llmService, "generateDailySummary");
+
+  const res = await request(app).get("/api/summary/daily");
+
+  expect(res.status).toBe(403); 
+  //expect(res.body.error).toMatch(/restricted/i);
+  expect(llmSpy).not.toHaveBeenCalled();
+});
 
 it("only include tasks updated on the requested date", async () => {
     const teamId = "team-123";
@@ -79,6 +131,7 @@ it("only include tasks updated on the requested date", async () => {
     expect(calledTasks[0].title).toBe("Today's Task");
   });
 
+  
 
   it("handle server errors gracefully if LLM fails", async () => {
     // 1. Create a task so the controller doesn't return "No activity" before the LLM call
