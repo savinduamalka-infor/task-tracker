@@ -398,6 +398,66 @@ it("return 403 if a Member tries to add a note to a task not assigned to them", 
     expect(res.body.error).toBe("Only a Lead can delete tasks");
   });
 
+  it("Lead can change the assignee to a new user", async () => {
+  const leadId = "507f191e810c19729de860ea";
+  const originalAssignee = "507f191e810c19729de860eb";
+  const newAssignee = "507f191e810c19729de860ec";
+
+  mockUser = {
+    id: leadId,
+    role: "Lead",
+    teamId: "team123",
+  };
+
+  const task = await TaskModel.create({
+    title: "Reassign Task",
+    teamId: "team123",
+    assigneeId: originalAssignee,
+    reporterId: leadId,
+    status: "TODO",
+    priority: "Medium",
+  });
+
+  const res = await request(app)
+    .patch(`/api/tasks/${task._id}`)
+    .send({ assigneeId: newAssignee });
+
+  expect(res.status).toBe(200);
+  expect(res.body.assigneeId).toBe(newAssignee);
+
+  const updatedTask = await TaskModel.findById(task._id);
+  expect(updatedTask?.assigneeId).toBe(newAssignee);
+});
+
+it("Lead can't reassign to the same assignee again", async () => {
+  const leadId = "507f191e810c19729de860ea";
+  const assigneeId = "507f191e810c19729de860eb";
+
+  mockUser = {
+    id: leadId,
+    role: "Lead",
+    teamId: "team123",
+  };
+
+  const task = await TaskModel.create({
+    title: "Idempotent Reassign Task",
+    teamId: "team123",
+    assigneeId,
+    reporterId: leadId,
+    status: "TODO",
+    priority: "Medium",
+  });
+
+  const res = await request(app)
+    .patch(`/api/tasks/${task._id}`)
+    .send({ assigneeId });
+
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBe("Task is already assigned to this user");
+
+  const updatedTask = await TaskModel.findById(task._id);
+  expect(updatedTask?.assigneeId).toBe(assigneeId);
+});
 
   });
 

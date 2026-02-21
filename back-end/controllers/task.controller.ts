@@ -92,13 +92,26 @@ export async function updateTask(req: Request, res: Response) {
   try {
     const { updates, ...updateData } = req.body;
 
-    // Only Lead can change the assignee
+      const targetTask = await TaskModel.findById(req.params.id);
+      if (!targetTask) {
+        res.status(404).json({ error: "Task not found" });
+        return;
+      }
+
+    // Only Lead can change the assignee    
     if (updateData.assigneeId !== undefined) {
       const role = req.user!.role;
+      console.log(role);
       if (role !== "Lead") {
         res.status(403).json({ error: "Only a Lead can reassign a task" });
         return;
       }
+
+      if (String(targetTask.assigneeId) === String(updateData.assigneeId)) {
+        res.status(400).json({ error: "Task is already assigned to this user" });
+        return;
+      }
+
     }
     
     let task;
@@ -108,11 +121,7 @@ export async function updateTask(req: Request, res: Response) {
         return;
       }
 
-      const targetTask = await TaskModel.findById(req.params.id);
-      if (!targetTask) {
-        res.status(404).json({ error: "Task not found" });
-        return;
-      }
+
       const userId = req.user!.id;
       const isAssignee = String(targetTask.assigneeId) === userId;
       const isHelper = (targetTask.helperIds || []).map(String).includes(userId);
