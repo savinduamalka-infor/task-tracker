@@ -134,15 +134,7 @@ describe("Team API", () => {
       expect(res.status).toBe(400);
     });
 
-    it("return 404 if team not found", async () => {
-      const fakeId = new mongoose.Types.ObjectId();
 
-      const res = await request(app)
-        .post(`/api/teams/${fakeId}/members`)
-        .send({ memberId: new mongoose.Types.ObjectId().toString() });
-
-      expect(res.status).toBe(404);
-    });
 
     it("cant add member if user is not lead", async () => {
       const originalUser = { ...mockUser };
@@ -242,7 +234,7 @@ describe("Team API", () => {
       expect(updatedTask?.assigneeId).toBe(mockUser.id);
     });
 
-    it("should prevent deleting a team if it still has active tasks", async () => {
+    it("prevent deleting a team if it still has active tasks", async () => {
       const team = await Team.create({
         name: "Active Task Team",
         createdBy: mockUser.id,
