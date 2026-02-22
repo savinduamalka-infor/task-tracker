@@ -1,7 +1,7 @@
 import { Moon, Sun, ChevronDown, LogOut, ClipboardList } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { authFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,14 +29,11 @@ export function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await axios.post(
+      await authFetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/sign-out`,
-        {},
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
         }
       );
     } catch (error) {

@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ArrowLeft } from "lucide-react";
+import { authFetch } from "@/lib/api";
 
 type RemoteUser = {
   _id: string;
@@ -47,9 +48,9 @@ export default function TeamMembers() {
     const fetchMembers = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`,
-          { credentials: "include", headers: { Accept: "application/json" } },
+          { headers: { Accept: "application/json" } },
         );
 
         if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -70,9 +71,7 @@ export default function TeamMembers() {
   const refreshMembers = async () => {
     if (!currentUser?.teamId) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`, {
-        credentials: "include",
-      });
+      const res = await authFetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`);
       if (res.ok) {
         const data = await res.json();
         setMembers(data.members || []);
@@ -87,9 +86,8 @@ export default function TeamMembers() {
     if (!selectedAddUser || !currentUser?.teamId) return;
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`, {
+      const res = await authFetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ memberId: selectedAddUser }),
       });
@@ -109,9 +107,9 @@ export default function TeamMembers() {
     if (!currentUser?.teamId) return;
 
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members/${memberId}`,
-        { method: "DELETE", credentials: "include" },
+        { method: "DELETE" },
       );
 
       if (res.ok) await refreshMembers();
@@ -150,9 +148,7 @@ export default function TeamMembers() {
                         variant="outline"
                         onClick={async () => {
                           try {
-                            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/without-team`, {
-                              credentials: "include",
-                            });
+                            const res = await authFetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/without-team`);
 
                             if (res.ok) {
                               const data = await res.json();

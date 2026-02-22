@@ -28,6 +28,19 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Drop-in replacement for `fetch()` that attaches the Bearer token.
+ * Use this instead of raw fetch() for any backend call.
+ */
+export function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const token = localStorage.getItem("session_token");
+  const headers = new Headers(init?.headers);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  return fetch(input, { ...init, credentials: "include", headers });
+}
+
 export interface CreateTaskDTO {
   title: string;
   summary: string;

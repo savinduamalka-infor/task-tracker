@@ -8,7 +8,7 @@ import { TaskDetailSheet } from "@/components/TaskDetailSheet";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { DailyUpdateDialog } from "@/components/DailyUpdateDialog";
 import { useTaskStore } from "@/lib/task-store";
-import { taskApi, userApi, authApi, joinRequestApi, teamApi, assignRequestApi, projectApi } from "@/lib/api";
+import { taskApi, userApi, authApi, joinRequestApi, teamApi, assignRequestApi, projectApi, authFetch } from "@/lib/api";
 import { AssignRequest } from "@/components/dashboard/LeadDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Table2, Filter, Users, UserPlus, Trash2, Plus, Clock, Check, X, Send, FolderOpen } from "lucide-react";
@@ -24,7 +24,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import axios from "axios";
 import { ProjectsTab } from "@/components/ProjectsTab";
 
 
@@ -143,9 +142,8 @@ const Index = () => {
   const loadTeamMembers = async () => {
     if (!currentUser?.teamId) return;
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`,
-        { credentials: "include" }
+      const res = await authFetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`
       );
       if (res.ok) {
         const data = await res.json();
@@ -282,9 +280,8 @@ const Index = () => {
       return;
     }
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`, {
+      const res = await authFetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ memberId: selectedUserId }),
       });
@@ -310,9 +307,9 @@ const Index = () => {
   const handleRemoveMember = async (memberId: string) => {
     if (!currentUser?.teamId) return;
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/teams/${currentUser.teamId}/members/${memberId}`,
-        { method: "DELETE", credentials: "include" }
+        { method: "DELETE" }
       );
       const data = await res.json();
       if (res.ok) {
@@ -329,9 +326,7 @@ const Index = () => {
 
   const loadAvailableUsers = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/without-team`, {
-        credentials: "include",
-      });
+      const res = await authFetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/without-team`);
       if (res.ok) {
         const data = await res.json();
         setAvailableUsers(data.users || []);
@@ -348,11 +343,12 @@ const Index = () => {
     }
     setCreatingTeam(true);
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/teams`,
-        { name: newTeamName.trim(), description: newTeamDescription.trim() },
-        { withCredentials: true }
-      );
+      const fetchRes = await authFetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTeamName.trim(), description: newTeamDescription.trim() }),
+      });
+      const res = { data: await fetchRes.json() };
 
       if (res.data?.team) {
         // Refresh session to get updated teamId

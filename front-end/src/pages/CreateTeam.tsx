@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { authApi } from "@/lib/api";
+import { authApi, authFetch } from "@/lib/api";
 import { useTaskStore } from "@/lib/task-store";
 import { useToast } from "@/hooks/use-toast";
 
@@ -82,11 +81,12 @@ const handleSubmit = async () => {
   }
 
   try {
-    const res = await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/teams`,
-      { name: teamName.trim(), description: description.trim() },
-      { withCredentials: true }
-    );
+    const fetchRes = await authFetch(`${import.meta.env.VITE_BACKEND_URL}/api/teams`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: teamName.trim(), description: description.trim() }),
+    });
+    const res = { data: await fetchRes.json() };
 
     if (res.data?.team) {
       const sessionRes = await authApi.getSession();
