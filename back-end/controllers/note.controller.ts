@@ -7,6 +7,10 @@ import {
 export async function autocompleteNoteHandler(req: Request, res: Response) {
   try {
     const { partialText, taskTitle } = req.body;
+    
+    if (!taskTitle || typeof taskTitle !== "string" || !taskTitle.trim()) {
+      return res.status(400).json({ error: "Task title is required" });
+    }
 
     if (!partialText || typeof partialText !== "string" || partialText.trim().length < 3) {
       return res.status(400).json({ error: "partialText must be at least 3 characters" });
@@ -23,6 +27,10 @@ export async function autocompleteNoteHandler(req: Request, res: Response) {
 export async function refineNoteHandler(req: Request, res: Response) {
   try {
     const { note, taskTitle } = req.body;
+
+    if (!taskTitle || typeof taskTitle !== "string" || !taskTitle.trim()) {
+      return res.status(400).json({ error: "Task title is required" });
+    }
 
     if (!note || typeof note !== "string" || note.trim().length < 3) {
       return res.status(400).json({ error: "note must be at least 3 characters" });

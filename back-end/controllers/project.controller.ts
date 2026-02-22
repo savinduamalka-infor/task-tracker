@@ -25,6 +25,10 @@ export const createProject = async (req: Request, res: Response) => {
     const { teamId } = req.params;
     const { name, description } = req.body;
 
+    if (teamId !== user.teamId) {
+    return res.status(403).json({ message: "You can only create projects for your own team" });
+  }
+
     if (!name?.trim()) {
       return res.status(400).json({ message: "Project name is required" });
     }

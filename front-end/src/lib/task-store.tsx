@@ -39,7 +39,15 @@ const DEFAULT_USER: User = {
 export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [currentRole, setCurrentRole] = useState<UserRole>("Member");
+
+   const [currentRole, setCurrentRole] = useState<UserRole>(DEFAULT_USER.role);
+  //const [currentRole, setCurrentRole] = useState<UserRole>("Lead");
+
+  //const [currentUser, setCurrentUser] = useState<User>(DEFAULT_USER);
+
+  //const [tasks, setTasks] = useState<Task[]>([]);
+  //const [currentRole, setCurrentRole] = useState<UserRole>("Member");
+
   const [currentUser, setCurrentUserState] = useState<User>(DEFAULT_USER);
 
   const setCurrentUser = useCallback((user: User) => {
