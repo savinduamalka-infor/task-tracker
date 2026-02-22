@@ -49,6 +49,7 @@ export function TaskStoreProvider({ children }: { children: React.ReactNode }) {
 
 
   const logout = useCallback(() => {
+    localStorage.removeItem("session_token");
     setCurrentUserState(DEFAULT_USER);
     setCurrentRole("Member");
   }, []);

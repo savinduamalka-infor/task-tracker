@@ -42,6 +42,7 @@ export function Navbar() {
     } catch (error) {
       console.error("Logout API error:", error);
     }
+    localStorage.removeItem("session_token");
     logout();
 
     toast({
