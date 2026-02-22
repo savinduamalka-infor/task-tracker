@@ -10,6 +10,7 @@ import { getTaskProgress } from "../controllers/progress.controller.js";
 import { createTeam, addTeamMember, removeTeamMember, getTeamMembers, getAllTeams, getTeamById, updateTeam, deleteTeam } from "../controllers/team.controller.js";
 import { createJoinRequest, getMyJoinRequests, getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from "../controllers/joinRequest.controller.js";
 import { createAssignRequest, getMyAssignRequests, getTeamAssignRequests, approveAssignRequest, rejectAssignRequest } from "../controllers/assignRequest.controller.js";
+import { createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject } from "../controllers/project.controller.js";
 const router = Router();
 
 router.get("/api/auth/session", getSession);
@@ -55,5 +56,12 @@ router.get("/api/assign-requests/my", protectedRoute, getMyAssignRequests);
 router.get("/api/assign-requests/team/:teamId", protectedRoute, getTeamAssignRequests);
 router.put("/api/assign-requests/:requestId/approve", protectedRoute, approveAssignRequest);
 router.put("/api/assign-requests/:requestId/reject", protectedRoute, rejectAssignRequest);
+
+// Project routes
+router.post("/api/teams/:teamId/projects", protectedRoute, createProject);
+router.get("/api/teams/:teamId/projects", protectedRoute, getProjectsByTeam);
+router.get("/api/projects/:projectId", protectedRoute, getProjectById);
+router.patch("/api/projects/:projectId", protectedRoute, updateProject);
+router.delete("/api/projects/:projectId", protectedRoute, deleteProject);
 
 export default router;

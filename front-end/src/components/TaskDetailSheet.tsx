@@ -144,6 +144,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
     setAddingSubtasks(true);
     let successCount = 0;
     const newAdded = new Set(addedSubtaskIndices);
+    let lastError = "";
 
     for (const st of toAdd) {
       try {
@@ -154,8 +155,9 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
         const idx = allSubtasks.indexOf(st);
         newAdded.add(idx);
         successCount++;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to add subtask:", st.title, error);
+        lastError = error.response?.data?.error || "Failed to add subtask";
       }
     }
 
@@ -172,8 +174,8 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
     }
     if (successCount < toAdd.length) {
       toast({
-        title: "Warning",
-        description: `${toAdd.length - successCount} subtask(s) failed to add.`,
+        title: "Error",
+        description: lastError || `${toAdd.length - successCount} subtask(s) failed to add.`,
         variant: "destructive",
       });
     }
@@ -246,9 +248,9 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
       await taskApi.delete(subtaskId);
       toast({ title: "Subtask Removed", description: "Subtask has been removed." });
       onSubtaskAdded?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete subtask:", error);
-      toast({ title: "Error", description: "Failed to remove subtask", variant: "destructive" });
+      toast({ title: "Error", description: error.response?.data?.error || "Failed to remove subtask", variant: "destructive" });
     } finally {
       setDeletingSubtaskId(null);
     }

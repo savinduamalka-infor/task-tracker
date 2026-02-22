@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { TaskModel } from "../models/task.model.js";
+import ProjectModel from "../models/project.model.js";
 import { generateDailySummary, DailySummaryTask } from "../services/llm.service.js";
 
 export async function getDailySummary(req: Request, res: Response) {
@@ -61,6 +62,13 @@ export async function getDailySummary(req: Request, res: Response) {
       .toArray();
     const userMap = new Map(allUsers.map((u) => [String(u._id), u.name as string]));
 
+    const projectIds = [...new Set(tasks.map((t) => t.projectId).filter(Boolean))] as string[];
+    const projectMap = new Map<string, string>();
+    if (projectIds.length > 0) {
+      const projects = await ProjectModel.find({ _id: { $in: projectIds } }, { name: 1 }).lean();
+      projects.forEach((p) => projectMap.set(String(p._id), p.name));
+    }
+
     const summaryTasks: DailySummaryTask[] = tasks.map((task) => {
       const todayUpdates = (task.updates || [])
         .filter((u) => {
@@ -77,6 +85,7 @@ export async function getDailySummary(req: Request, res: Response) {
         status: task.status,
         priority: task.priority,
         assigneeName: userMap.get(String(task.assigneeId)) || "Unknown",
+        projectName: task.projectId ? projectMap.get(String(task.projectId)) : undefined,
         updates: todayUpdates,
       };
     });
