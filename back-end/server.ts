@@ -27,8 +27,8 @@ async function start() {
     const auth   = initAuth(db, client);
 
     const authHandler = toNodeHandler(auth);
-    app.use(routes);
     app.use("/api/auth", (req, res) => authHandler(req, res));
+    app.use(routes);
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
