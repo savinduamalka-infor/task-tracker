@@ -78,8 +78,8 @@ export default function Login() {
       if (response.data?.user) {
         // Store session token for cross-domain auth (cookie won't work
         // between vercel.app and onrender.com)
-        if (response.data.session?.token) {
-          localStorage.setItem("session_token", response.data.session.token);
+        if (response.data.token) {
+          localStorage.setItem("session_token", response.data.token);
         }
 
         const userData = {
