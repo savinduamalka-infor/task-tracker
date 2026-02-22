@@ -27,8 +27,13 @@ async function start() {
     const auth   = initAuth(db, client);
 
     const authHandler = toNodeHandler(auth);
-    app.use("/api/auth", (req, res) => authHandler(req, res));
+
+    // Custom Express routes FIRST so /api/auth/session & /api/auth/sign-out
+    // are handled by our controllers (BetterAuth doesn't have these paths).
     app.use(routes);
+
+    // BetterAuth catches remaining /api/auth/* routes (sign-in, sign-up, etc.)
+    app.all("/api/auth/*", (req, res) => authHandler(req, res));
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
