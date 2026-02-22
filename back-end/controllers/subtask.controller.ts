@@ -36,11 +36,24 @@ export async function addSubtaskToParent(req: Request, res: Response) {
       return;
     }
 
+    // Check permission
+    const userId = user.id;
+    const isAssignee = String(parentTask.assigneeId) === userId;
+    const isHelper = (parentTask.helperIds || []).map(String).includes(userId);
+    const isLead = user.role === "Lead";
+
+    if (!isAssignee && !isHelper && !isLead) {
+      res.status(403).json({ error: "Only the assignee, a helper, or a Lead can add subtasks" });
+      return;
+    }
+
+    // Subtask inherits assignee and helpers from parent
     const subtask = await TaskModel.create({
       title,
       description: description || "",
       summary: `Subtask of: ${parentTask.title}`,
       assigneeId: parentTask.assigneeId,
+      helperIds: parentTask.helperIds || [],
       reporterId: user.id,
       status: "TODO",
       priority: parentTask.priority,
