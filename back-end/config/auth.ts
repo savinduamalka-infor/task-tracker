@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { bearer } from "better-auth/plugins";
 import type { Db, MongoClient } from "mongodb";
 
 import "../models/user.model";
@@ -22,6 +23,8 @@ function buildAuth(db: Db, client?: MongoClient) {
     emailAndPassword: {
       enabled: true,
     },
+
+    plugins: [bearer()],
 
     user: {
       additionalFields: {
