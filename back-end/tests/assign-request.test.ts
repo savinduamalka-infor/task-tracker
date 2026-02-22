@@ -20,7 +20,7 @@ vi.mock("../middleware/auth.middleware.js", () => ({
   },
 }));
 
-describe("Assign Request System - Smart Tests", () => {
+describe("Assign Request System ", () => {
 
 beforeEach(async () => {
     activeMockTeamId = validTeamId; // Reset to valid

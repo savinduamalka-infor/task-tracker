@@ -5,22 +5,30 @@ import app from "../app";
 import { TaskModel } from "../models/task.model";
 import * as llmService from "../services/llm.service";
 
-// 1. Mock the protectedRoute middleware to bypass authentication
+let activeUser = { 
+  id: new mongoose.Types.ObjectId().toString(), 
+  role: "Member", 
+  teamId: "team-123" 
+};
+
 vi.mock("../middleware/auth.middleware.js", () => ({
   protectedRoute: (req: any, res: any, next: any) => {
-    req.user = { id: new mongoose.Types.ObjectId().toString(), teamId: "team-123" };
+    req.user = activeUser;
     next();
   },
 }));
 
 describe("Subtask Controller", () => {
   const mockUserId = new mongoose.Types.ObjectId().toString();
-
-  beforeEach(() => {
+  const adminId = new mongoose.Types.ObjectId().toString();
+  beforeEach(async() => {
     vi.clearAllMocks();
+    await TaskModel.deleteMany({});
+    activeUser = { id: adminId, role: "Member", teamId: "team-123" };
   });
 
-  describe("Subtask Tests", () => {
+  describe("", () => {
+    
     it("can't create a subtask if title is whitespace only", async () => {
       const res = await request(app)
         .post("/api/subtasks/suggest") 
@@ -28,6 +36,57 @@ describe("Subtask Controller", () => {
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe("Title is required");
+    });
+
+    it("can't add subtask when user is not assignee, helper, or lead", async () => {
+      const userAId = new mongoose.Types.ObjectId().toString();
+      const parentTask = await TaskModel.create({
+        title: "User A's Task",
+        assigneeId: userAId,
+        teamId: "team-123",
+        reporterId: userAId,
+        priority: "Medium"
+      });
+
+      activeUser = { 
+        id: new mongoose.Types.ObjectId().toString(), 
+        role: "Member", 
+        teamId: "team-123" 
+      };
+
+      const res = await request(app)
+        .post(`/api/subtasks/${parentTask._id}`)
+        .send({ title: "I am an intruder" });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toMatch(/Only the assignee, a helper, or a Lead/i);
+    });
+
+    it("allow nested subtasks", async () => {
+      // Parent
+      const level1 = await TaskModel.create({
+        title: "Level 1 Parent",
+        assigneeId: activeUser.id,
+        teamId: "team-123",
+        reporterId: activeUser.id
+      });
+
+      // Subtask of Level
+      const level2Res = await request(app)
+        .post(`/api/subtasks/${level1._id}`)
+        .send({ title: "Level 2 Subtask" });
+      
+      const level2Id = level2Res.body._id;
+
+      // Subtask of subtask
+      const res = await request(app)
+        .post(`/api/subtasks/${level2Id}`)
+        .send({ title: "Level 3 Subtask" });
+
+      expect(res.status).toBe(201);
+      expect(res.body.parentTaskId).toBe(level2Id);
+      expect(res.body.isSubtask).toBe(true);
+      expect(res.body.summary).toContain(`Subtask of: Level 2 Subtask`);
     });
 
     it("return subtasks  ", async () => {
@@ -50,8 +109,8 @@ describe("Subtask Controller", () => {
         priority: "High",
         status: "TODO",
         teamId: "team-123",
-        reporterId: mockUserId,
-        assigneeId: mockUserId
+       reporterId: new mongoose.Types.ObjectId(activeUser.id),
+    assigneeId: new mongoose.Types.ObjectId(activeUser.id)
       });
 
       const res = await request(app)
