@@ -33,7 +33,7 @@ async function start() {
     app.use(routes);
 
     // BetterAuth catches remaining /api/auth/* routes (sign-in, sign-up, etc.)
-    app.all("/api/auth/*", (req, res) => authHandler(req, res));
+    app.all("/api/auth/*path", (req, res) => authHandler(req, res));
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
