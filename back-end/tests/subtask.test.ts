@@ -20,9 +20,8 @@ describe("Subtask Controller", () => {
     vi.clearAllMocks();
   });
 
-  describe("", () => {
-    it("return 400 if title is whitespace only", async () => {
-      // FIX: URL matches router.post("/api/subtasks/suggest", ...)
+  describe("Subtask Tests", () => {
+    it("can't create a subtask if title is whitespace only", async () => {
       const res = await request(app)
         .post("/api/subtasks/suggest") 
         .send({ title: "   " });
@@ -31,7 +30,7 @@ describe("Subtask Controller", () => {
       expect(res.body.error).toBe("Title is required");
     });
 
-    it("return subtasks from the mocked Groq API", async () => {
+    it("return subtasks  ", async () => {
       const mockData = [{ title: "Subtask 1", description: "Desc 1" }];
       vi.spyOn(llmService, "generateSubtasks").mockResolvedValue(mockData);
 
@@ -42,11 +41,10 @@ describe("Subtask Controller", () => {
       expect(res.status).toBe(200);
       expect(res.body.subtasks).toEqual(mockData);
     });
-  });
 
-  describe("", () => {
+
+
     it("successfully create a subtask inheriting parent metadata", async () => {
-      // Create parent with all required schema fields
       const parent = await TaskModel.create({
         title: "Parent Task",
         priority: "High",
@@ -56,7 +54,6 @@ describe("Subtask Controller", () => {
         assigneeId: mockUserId
       });
 
-      // FIX: URL matches router.post("/api/subtasks/:parentTaskId", ...)
       const res = await request(app)
         .post(`/api/subtasks/${parent._id}`)
         .send({ title: "New Subtask" });
@@ -66,7 +63,7 @@ describe("Subtask Controller", () => {
       expect(res.body.isSubtask).toBe(true);
     });
 
-    it("return 404 for a non-existent parent task ID", async () => {
+    it("return 404 for a non existent parent task ID", async () => {
       const randomId = new mongoose.Types.ObjectId().toString();
       const res = await request(app)
         .post(`/api/subtasks/${randomId}`)

@@ -21,7 +21,7 @@ vi.mock("../middleware/auth.middleware.js", () => ({
   },
 }));
 
-describe("Daily Summary Logic Tests", () => {
+describe("Daily Summary Tests", () => {
   
   beforeEach(() => {
     vi.clearAllMocks();
@@ -58,7 +58,7 @@ describe("Daily Summary Logic Tests", () => {
       expect(llmSpy).toHaveBeenCalled(); 
     });
 
-it("should NOT allow Members to get AI daily summary", async () => {
+it("should not allow Members to get AI daily summary", async () => {
   activeUser = { id: mockUserId, teamId: mockTeamId, role: "Member" };
 
   await TaskModel.create({
@@ -87,7 +87,7 @@ it("should NOT allow Members to get AI daily summary", async () => {
 it("only include tasks updated on the requested date", async () => {
     const teamId = "team-123";
 
-    // Task 1: Updated TODAY
+    // Updated today
     await TaskModel.create({
       title: "Today's Task",
       status: "DONE",
@@ -102,7 +102,7 @@ it("only include tasks updated on the requested date", async () => {
       }]
     });
 
-    // Task 2: Updated on DIFFERENT date
+    // Updated on different date
     await TaskModel.create({
       title: "Old Task",
       status: "TODO",
@@ -115,7 +115,6 @@ it("only include tasks updated on the requested date", async () => {
         note: "Started",
         updatedBy: mockUserId
       }],
-      // FIX: Explicitly set updatedAt to the past so it fails the $or filter
       updatedAt: new Date("2026-02-15T10:00:00.000Z") 
     });
 
@@ -126,7 +125,6 @@ it("only include tasks updated on the requested date", async () => {
     expect(res.status).toBe(200);
     const calledTasks = llmSpy.mock.calls[0][1]; 
     
-    // Now this will correctly be 1
     expect(calledTasks).toHaveLength(1);
     expect(calledTasks[0].title).toBe("Today's Task");
   });
@@ -134,7 +132,6 @@ it("only include tasks updated on the requested date", async () => {
   
 
   it("handle server errors gracefully if LLM fails", async () => {
-    // 1. Create a task so the controller doesn't return "No activity" before the LLM call
     await TaskModel.create({
       title: "Error Task",
       teamId: "team-123",
@@ -143,12 +140,10 @@ it("only include tasks updated on the requested date", async () => {
       updates: [{ date: "2026-02-20T10:00:00.000Z", note: "x", updatedBy: mockUserId }]
     });
 
-    // 2. Force the LLM service to throw an error
     vi.spyOn(llmService, "generateDailySummary").mockRejectedValue(new Error("AI Offline"));
 
     const res = await request(app).get("/api/summary/daily?date=2026-02-20");
 
-    // This will fail if your controller doesn't use res.status(500)
     expect(res.status).toBe(500);
     expect(res.body.error).toBe("Failed to generate daily summary");
   });
