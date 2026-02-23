@@ -11,7 +11,7 @@ export async function generateSubtasks(taskTitle: string, taskDescription: strin
         messages: [
           {
             role: "system",
-            content: "You are a task breakdown assistant. Given a task title and description, generate 3-5 actionable subtasks. Return ONLY a JSON array of objects with 'title' and 'description' fields. Keep subtasks concise and specific."
+            content: "You are a task breakdown assistant. Given a task title and description, generate exactly 3-5 actionable subtasks. Output must be ONLY a valid JSON array of objects, where each object has exactly two fields: 'title' (string) and 'description' (string). Keep subtasks concise, specific, and relevant. Do not include any text before or after the JSON array. Do not add explanations, comments, or invalid JSON. Example output: [{'title': 'Step 1', 'description': 'Do this'}, {'title': 'Step 2', 'description': 'Do that'}]."
           },
           {
             role: "user",
@@ -66,7 +66,7 @@ export async function autocompleteNote(
         messages: [
           {
             role: "system",
-            content: `You are an autocomplete assistant for a daily standup update note${context}. Given the partial text the user has typed so far, suggest a natural continuation. Return ONLY the completion text (the part that comes AFTER what the user already typed). Keep it concise (1-2 sentences max). Do not repeat the user's text. Do not add any prefixes, quotes, or explanations.`,
+            content: `You are an autocomplete assistant for a daily standup update note${context}. Given the partial text the user has typed so far, suggest a natural continuation. Output must be ONLY the completion text (the part that comes AFTER what the user already typed). Keep it concise (1-2 sentences max). Do not repeat the user's text. Do not add any prefixes, quotes, explanations, or extra characters. Ensure the output is clean and directly continuable from the partial text.`,
           },
           {
             role: "user",
@@ -109,7 +109,7 @@ export async function refineNote(
 2. Making it more detailed and professional
 3. Keeping the same meaning and intent
 4. Using clear, concise technical language
-Return ONLY the refined note text. Do not add any prefixes, explanations, or quotes.`,
+Output must be ONLY the refined note text. Do not add any prefixes, explanations, quotes, or extra characters. Ensure the output is clean, standalone text without any wrappers.`,
           },
           {
             role: "user",
@@ -167,7 +167,7 @@ List tasks actively worked on (IN_PROGRESS). Briefly mention what was done based
 ## 🚫 Blocked
 List any blocked tasks with their blocked reasons. If none, say "No blockers — great work!"
 
-## � Projects Active Today
+## 🚀 Projects Active Today
 List each distinct project that had activity, with the tasks worked on under each. If no tasks belong to a project, skip this section.
 
 ## 📊 Team Snapshot
@@ -179,7 +179,8 @@ Rules:
 - When a task belongs to a project, mention the project name next to the task (e.g. "Task Title [Project A]").
 - Do not invent information not in the data.
 - Do not include raw JSON or code blocks.
-- Keep it professional but friendly.`
+- Keep it professional but friendly.
+Output must be ONLY the Markdown summary as specified. Do not add any extra text, introductions, conclusions, or wrappers before or after the summary. Ensure the output is valid Markdown without errors.`
           },
           {
             role: "user",
@@ -242,7 +243,8 @@ export async function generateTaskProgress(
 ## Next Steps
 [Based on TODO subtasks and current progress. If unclear, state "Pending team input"]
 
-IMPORTANT: Do not invent information. Use only the provided data. If data is missing, acknowledge it.`
+IMPORTANT: Do not invent information. Use only the provided data. If data is missing, acknowledge it.
+Output must be ONLY the structured report in Markdown as specified. Do not add any extra text, introductions, conclusions, or wrappers before or after the report. Ensure the output is clean and follows the exact structure without deviations.`
           },
           {
             role: "user",
