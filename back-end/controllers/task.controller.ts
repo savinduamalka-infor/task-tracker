@@ -28,6 +28,16 @@ export async function createTask(req: Request, res: Response) {
       res.status(403).json({ error: "Members can only assign tasks to themselves" });
       return;
     }
+
+    if (req.body.startDate && req.body.dueDate) {
+      const startDate = new Date(req.body.startDate);
+      const dueDate = new Date(req.body.dueDate);
+      if (dueDate < startDate) {
+        res.status(400).json({ error: "Due date cannot be before start date" });
+        return;
+      }
+    }
+
     // Validate projectId belongs to the same team
     const projectId = req.body.projectId;
     if (projectId) {

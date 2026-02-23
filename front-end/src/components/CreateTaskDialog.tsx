@@ -34,6 +34,9 @@ const schema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   dueDate: z.string().min(1, "Due date is required"),
   projectId: z.string().optional(),
+}).refine((data) => data.dueDate >= data.startDate, {
+  message: "Due date cannot be before start date",
+  path: ["dueDate"],
 });
 
 type FormData = z.infer<typeof schema>;
@@ -220,7 +223,7 @@ export function CreateTaskDialog({ open, onClose }: CreateTaskDialogProps) {
             </div>
             <div>
               <Label>Due Date <span className="text-destructive">*</span></Label>
-              <Input type="date" {...register("dueDate")} />
+              <Input type="date" {...register("dueDate")} min={watch("startDate")} />
               {errors.dueDate && <p className="text-xs text-destructive mt-1">{errors.dueDate.message}</p>}
             </div>
           </div>
