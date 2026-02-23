@@ -24,6 +24,10 @@ async function seed() {
     await TaskModel.deleteMany({});
     await JoinRequest.deleteMany({});
     await AssignRequestModel.deleteMany({});
+    
+    const ProjectModel = (await import("../models/project.model.js")).default;
+    await ProjectModel.deleteMany({});
+    
     console.log("Cleared existing data");
 
     // Create Users with authentication - Infor Sri Lanka Team
@@ -84,6 +88,37 @@ async function seed() {
 
     console.log("Created 3 teams");
 
+    // Create Projects
+    const cloudSuiteProject = await ProjectModel.create({
+      name: "CloudSuite Industrial v23.4",
+      description: "Major release with new features and performance improvements",
+      teamId: engineeringTeam._id.toString(),
+      createdBy: rajitha._id,
+    });
+
+    const apiGatewayProject = await ProjectModel.create({
+      name: "API Gateway Modernization",
+      description: "Modernize authentication and security layer",
+      teamId: engineeringTeam._id.toString(),
+      createdBy: rajitha._id,
+    });
+
+    const qaAutomationProject = await ProjectModel.create({
+      name: "Test Automation Framework",
+      description: "Build comprehensive automated testing suite",
+      teamId: qaTeam._id.toString(),
+      createdBy: pradeep._id,
+    });
+
+    const infraProject = await ProjectModel.create({
+      name: "Cloud Infrastructure Upgrade",
+      description: "Migrate to Kubernetes and modernize CI/CD",
+      teamId: devopsTeam._id.toString(),
+      createdBy: ruwan._id,
+    });
+
+    console.log("Created 4 projects");
+
     // Update users with teamIds
     await db.collection("user").updateMany(
       { _id: { $in: [rajitha._id, kasun._id, nimali._id, tharindu._id, dilini._id].map(id => new mongoose.Types.ObjectId(id)) } },
@@ -100,7 +135,6 @@ async function seed() {
 
     // Create Tasks for Engineering Team
     const engTasks = await TaskModel.create([
-      // High Priority - In Progress
       {
         title: "Implement CloudSuite API Gateway Authentication",
         summary: "Add OAuth 2.0 authentication layer for CloudSuite API Gateway",
@@ -113,6 +147,7 @@ async function seed() {
         dueDate: new Date("2025-02-05"),
         reporterId: rajitha._id,
         teamId: engineeringTeam._id.toString(),
+        projectId: apiGatewayProject._id.toString(),
         updates: [
           {
             date: new Date("2025-01-22"),
@@ -126,7 +161,6 @@ async function seed() {
           },
         ],
       },
-      // High Priority - Blocked
       {
         title: "Migrate CloudSuite Database to PostgreSQL 15",
         summary: "Upgrade database from PostgreSQL 12 to PostgreSQL 15 for performance improvements",
@@ -138,6 +172,7 @@ async function seed() {
         dueDate: new Date("2025-02-10"),
         reporterId: rajitha._id,
         teamId: engineeringTeam._id.toString(),
+        projectId: cloudSuiteProject._id.toString(),
         updates: [
           {
             date: new Date("2025-01-23"),
@@ -147,7 +182,6 @@ async function seed() {
           },
         ],
       },
-      // Medium Priority - In Progress
       {
         title: "Develop Inventory Management Dashboard",
         summary: "Create real-time inventory tracking dashboard for CloudSuite Industrial",
@@ -160,6 +194,7 @@ async function seed() {
         dueDate: new Date("2025-02-15"),
         reporterId: rajitha._id,
         teamId: engineeringTeam._id.toString(),
+        projectId: cloudSuiteProject._id.toString(),
         updates: [
           {
             date: new Date("2025-01-20"),
@@ -178,7 +213,6 @@ async function seed() {
           },
         ],
       },
-      // Medium Priority - TODO
       {
         title: "Optimize CloudSuite Report Generation Performance",
         summary: "Improve report generation speed by 50% through query optimization",
@@ -190,8 +224,8 @@ async function seed() {
         dueDate: new Date("2025-02-20"),
         reporterId: rajitha._id,
         teamId: engineeringTeam._id.toString(),
+        projectId: cloudSuiteProject._id.toString(),
       },
-      // Low Priority - TODO
       {
         title: "Update CloudSuite User Documentation",
         summary: "Refresh user documentation for CloudSuite v23.4 release",
@@ -203,8 +237,8 @@ async function seed() {
         dueDate: new Date("2025-02-25"),
         reporterId: rajitha._id,
         teamId: engineeringTeam._id.toString(),
+        projectId: cloudSuiteProject._id.toString(),
       },
-      // High Priority - Done
       {
         title: "Fix Critical Security Vulnerability in Authentication Module",
         summary: "Patch SQL injection vulnerability in login endpoint",
@@ -216,6 +250,7 @@ async function seed() {
         dueDate: new Date("2025-01-18"),
         reporterId: rajitha._id,
         teamId: engineeringTeam._id.toString(),
+        projectId: apiGatewayProject._id.toString(),
         completedAt: new Date("2025-01-17"),
         updates: [
           {
@@ -235,7 +270,6 @@ async function seed() {
           },
         ],
       },
-      // Medium Priority - Done
       {
         title: "Implement Multi-Language Support for CloudSuite UI",
         summary: "Add internationalization support for Sinhala and Tamil languages",
@@ -247,6 +281,7 @@ async function seed() {
         dueDate: new Date("2025-01-20"),
         reporterId: rajitha._id,
         teamId: engineeringTeam._id.toString(),
+        projectId: cloudSuiteProject._id.toString(),
         completedAt: new Date("2025-01-19"),
         updates: [
           {
@@ -277,6 +312,7 @@ async function seed() {
         dueDate: new Date("2025-02-08"),
         reporterId: pradeep._id,
         teamId: qaTeam._id.toString(),
+        projectId: qaAutomationProject._id.toString(),
         updates: [
           {
             date: new Date("2025-01-18"),
@@ -301,6 +337,7 @@ async function seed() {
         dueDate: new Date("2025-02-12"),
         reporterId: pradeep._id,
         teamId: qaTeam._id.toString(),
+        projectId: qaAutomationProject._id.toString(),
       },
       {
         title: "Security Penetration Testing for CloudSuite",
@@ -313,6 +350,7 @@ async function seed() {
         dueDate: new Date("2025-01-22"),
         reporterId: pradeep._id,
         teamId: qaTeam._id.toString(),
+        projectId: qaAutomationProject._id.toString(),
         completedAt: new Date("2025-01-21"),
         updates: [
           {
@@ -337,6 +375,7 @@ async function seed() {
         dueDate: new Date("2025-02-02"),
         reporterId: ruwan._id,
         teamId: devopsTeam._id.toString(),
+        projectId: infraProject._id.toString(),
         updates: [
           {
             date: new Date("2025-01-20"),
@@ -361,6 +400,7 @@ async function seed() {
         dueDate: new Date("2025-02-10"),
         reporterId: ruwan._id,
         teamId: devopsTeam._id.toString(),
+        projectId: infraProject._id.toString(),
         updates: [
           {
             date: new Date("2025-01-22"),
@@ -380,6 +420,7 @@ async function seed() {
         dueDate: new Date("2025-02-15"),
         reporterId: ruwan._id,
         teamId: devopsTeam._id.toString(),
+        projectId: infraProject._id.toString(),
       },
     ]);
 
@@ -452,12 +493,12 @@ async function seed() {
     // Create Join Requests
     await JoinRequest.create([
       {
-        userId: users[10]._id, // Sachini
+        userId: users[10]._id,
         teamId: engineeringTeam._id,
         status: "pending",
       },
       {
-        userId: users[11]._id, // Ashan
+        userId: users[11]._id,
         teamId: qaTeam._id,
         status: "pending",
       },
@@ -468,7 +509,7 @@ async function seed() {
     // Create Assign/Help Requests
     await AssignRequestModel.create([
       {
-        taskId: engTasks[1]._id, // Blocked database migration task
+        taskId: engTasks[1]._id,
         requesterId: tharindu._id,
         teamId: engineeringTeam._id.toString(),
         suggestedMemberIds: [kasun._id],
@@ -483,6 +524,7 @@ async function seed() {
     console.log("\n📊 Summary:");
     console.log(`- Users: ${users.length}`);
     console.log(`- Teams: 3 (Engineering, QA, DevOps)`);
+    console.log(`- Projects: 4`);
     console.log(`- Tasks: ${engTasks.length + qaTasks.length + devopsTasks.length}`);
     console.log(`- Subtasks: 4`);
     console.log(`- Join Requests: 2`);
