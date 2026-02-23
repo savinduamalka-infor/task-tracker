@@ -168,15 +168,18 @@ You are ONLY allowed to use information that is EXPLICITLY present in the "Tasks
 For the sections below, use ONLY the exact matching items from the data:
 
 ## 🏁 Completed Today
-List ONLY tasks where Current Status is exactly "DONE". Use the exact title and assignee from the data. 
+List ONLY tasks where Current Status is exactly "DONE". Format: "TaskTitle (AssigneeName)"
 If none, output EXACTLY: "No tasks were completed today."
 
 ## 🚧 In Progress
-List ONLY tasks where Current Status is exactly "IN_PROGRESS". Use the exact title, assignee, and update notes from the data. 
-If none, output EXACTLY: "No tasks in progress today."
+List ONLY tasks where Current Status is exactly "IN_PROGRESS". Format each task on ONE line:
+- If task has update notes: "TaskTitle (AssigneeName): note text"
+- If task has NO update notes: "TaskTitle (AssigneeName) — No updates submitted today"
+Never put "No updates submitted today" as a separate bullet point.
+If no IN_PROGRESS tasks exist, output EXACTLY: "No tasks in progress today."
 
 ## 🚫 Blocked
-List ONLY tasks that have a blockedReason OR where Current Status is exactly "BLOCKED". Use the exact title, assignee, and blocked reason from the data. 
+List ONLY tasks that have a blockedReason OR where Current Status is exactly "BLOCKED". Format: "TaskTitle (AssigneeName): blocked reason"
 If none, output EXACTLY: "No blockers — great work!"
 
 ## 🚀 Projects Active Today
