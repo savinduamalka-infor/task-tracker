@@ -21,10 +21,11 @@ export async function getDailySummary(req: Request, res: Response) {
       ? new Date(date as string)
       : new Date();
 
+    // Set to UTC midnight to avoid timezone issues
     const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     const taskFilter: any = {
       $or: [
@@ -41,8 +42,14 @@ export async function getDailySummary(req: Request, res: Response) {
     const tasks = await TaskModel.find(taskFilter).lean();
 
     if (tasks.length === 0) {
+      const now = new Date();
+      now.setUTCHours(0, 0, 0, 0);
+      const isFuture = startOfDay > now;
+      
       res.json({
-        summary: "No task activity found for this date. The team may have had a day off or updates haven't been submitted yet.",
+        summary: isFuture 
+          ? "This date is in the future. No activity has occurred yet."
+          : "No task activity found for this date. The team may have had a day off or updates haven't been submitted yet.",
         date: targetDate.toISOString().split("T")[0],
         taskCount: 0,
       });
@@ -51,7 +58,7 @@ export async function getDailySummary(req: Request, res: Response) {
 
     if(!isLead){
       res.status(403).json({
-        error: "only leads can access the dily summary."
+        error: "only leads can access the daily summary."
       });
       return;
     }
@@ -69,26 +76,34 @@ export async function getDailySummary(req: Request, res: Response) {
       projects.forEach((p) => projectMap.set(String(p._id), p.name));
     }
 
-    const summaryTasks: DailySummaryTask[] = tasks.map((task) => {
-      const todayUpdates = (task.updates || [])
-        .filter((u) => {
-          const d = new Date(u.date);
-          return d >= startOfDay && d <= endOfDay;
-        })
-        .map((u) => ({
-          note: u.note,
-          blockedReason: u.blockedReason,
-        }));
+    const summaryTasks: DailySummaryTask[] = tasks
+      .map((task) => {
+        const todayUpdates = (task.updates || [])
+          .filter((u) => {
+            const d = new Date(u.date);
+            return d >= startOfDay && d <= endOfDay;
+          })
+          .map((u) => ({
+            note: u.note,
+            blockedReason: u.blockedReason,
+          }));
 
-      return {
-        title: task.title,
-        status: task.status,
-        priority: task.priority,
-        assigneeName: userMap.get(String(task.assigneeId)) || "Unknown",
-        projectName: task.projectId ? projectMap.get(String(task.projectId)) : undefined,
-        updates: todayUpdates,
-      };
-    });
+        const statusChanged = task.updatedAt && 
+          new Date(task.updatedAt) >= startOfDay && 
+          new Date(task.updatedAt) <= endOfDay;
+
+        return {
+          title: task.title,
+          status: task.status,
+          priority: task.priority,
+          assigneeName: userMap.get(String(task.assigneeId)) || "Unknown",
+          projectName: task.projectId ? projectMap.get(String(task.projectId)) : undefined,
+          updates: todayUpdates,
+          hasActivity: todayUpdates.length > 0 || statusChanged,
+        };
+      })
+      .filter((task) => task.hasActivity)
+      .map(({ hasActivity, ...task }) => task);
 
     const dateStr = targetDate.toISOString().split("T")[0];
     const summary = await generateDailySummary(dateStr, summaryTasks);

@@ -154,40 +154,52 @@ export async function generateDailySummary(
         messages: [
           {
             role: "system",
-            content: `You are a concise stand-up meeting summarizer for a software team. Given a list of tasks and their daily updates for a specific date, produce a clear, well-structured end-of-day sync summary in Markdown.
+            content: `You are a STRICTLY FACTUAL stand-up meeting summarizer. 
 
-Your summary MUST include these sections:
+**ZERO TOLERANCE FOR HALLUCINATION — THIS IS A HARD RULE:**
+
+You are ONLY allowed to use information that is EXPLICITLY present in the "Tasks with today's updates" section of the user message. 
+
+- The list provided is the COMPLETE and ONLY data for this date. There are no other tasks, projects, assignees, updates, or details in existence for this summary.
+- You are FORBIDDEN from inventing, creating, assuming, guessing, or adding ANY task, title, assignee name, project name, note, status, or any other detail that is not literally written in the provided data.
+- Never use placeholder or example names like "Task 1", "Task 2", "John", "Jane", "Project A", "Project B", etc. unless they appear EXACTLY in the input data.
+- If the "Tasks with today's updates" section is empty or contains no tasks, you MUST output EXACTLY: "No data available on this day. No tasks or updates were provided."
+
+For the sections below, use ONLY the exact matching items from the data:
 
 ## 🏁 Completed Today
-List tasks that moved to DONE today. If none, say "No tasks were completed today."
+List ONLY tasks where Current Status is exactly "DONE". Use the exact title and assignee from the data. 
+If none, output EXACTLY: "No tasks were completed today."
 
 ## 🚧 In Progress
-List tasks actively worked on (IN_PROGRESS). Briefly mention what was done based on the update notes.
+List ONLY tasks where Current Status is exactly "IN_PROGRESS". Use the exact title, assignee, and update notes from the data. 
+If none, output EXACTLY: "No tasks in progress today."
 
 ## 🚫 Blocked
-List any blocked tasks with their blocked reasons. If none, say "No blockers — great work!"
+List ONLY tasks that have a blockedReason OR where Current Status is exactly "BLOCKED". Use the exact title, assignee, and blocked reason from the data. 
+If none, output EXACTLY: "No blockers — great work!"
 
 ## 🚀 Projects Active Today
-List each distinct project that had activity, with the tasks worked on under each. If no tasks belong to a project, skip this section.
+List ONLY the distinct project names that appear in the provided data. Group only the exact tasks that belong to them. 
+If no projects appear in the data, skip this section entirely.
 
 ## 📊 Team Snapshot
-Give a 2-3 sentence overall assessment of the team's day — productivity, momentum, any concerns.
+Write exactly 2-3 factual sentences based ONLY on the statuses and update notes that are actually present in the data. No opinions, no speculation.
 
-Rules:
-- Be concise. Use bullet points.
-- Reference assignee names.
-- When a task belongs to a project, mention the project name next to the task (e.g. "Task Title [Project A]").
-- Do not invent information not in the data.
-- Do not include raw JSON or code blocks.
-- Keep it professional but friendly.
-Output must be ONLY the Markdown summary as specified. Do not add any extra text, introductions, conclusions, or wrappers before or after the summary. Ensure the output is valid Markdown without errors.`
+ADDITIONAL HARD RULES:
+- Every single word about tasks, people, or projects must come directly from the input data.
+- Never add any extra tasks, even if it feels "reasonable".
+- If you are unsure whether something is in the data — DO NOT include it.
+- Output MUST be ONLY the Markdown with the exact 5 sections above. No extra text, no introductions, no conclusions, no explanations, no wrappers.
+
+Violating any of these rules is not allowed.`
           },
           {
             role: "user",
-            content: `Date: ${date}\n\nTasks with today's updates:\n\n${taskLines}\n\nGenerate the end-of-day sync summary.`
+            content: `Date: ${date}\n\nTasks with today's updates:\n\n${taskLines}\n\nGenerate the end-of-day sync summary using ONLY the data above. Do not invent anything.`
           }
         ],
-        temperature: 0.5,
+        temperature: 0.1,
         max_tokens: 1000
       },
       {
