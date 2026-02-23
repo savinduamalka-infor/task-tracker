@@ -19,7 +19,7 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import {
-  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2, Trash2, FileText, HandHelping, ChevronsUpDown, Check, UserCheck,
+  CalendarDays, User, MessageSquarePlus, AlertTriangle, ListChecks, Sparkles, CheckCircle2, PlusCircle, Link2, Loader2, Trash2, FileText, HandHelping, ChevronsUpDown, Check, UserCheck, FolderOpen,
 } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
 import { subtaskApi, taskApi, progressApi, assignRequestApi } from "@/lib/api";
@@ -41,9 +41,10 @@ interface TaskDetailSheetProps {
   onTaskClick?: (taskId: string) => void;
   allTasks?: Task[];
   onDeleteTask?: (taskId: string) => void;
+  projects?: { _id: string; name: string }[];
 }
 
-export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSubtaskAdded, onTaskClick, allTasks = [], onDeleteTask }: TaskDetailSheetProps) {
+export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSubtaskAdded, onTaskClick, allTasks = [], onDeleteTask, projects = [] }: TaskDetailSheetProps) {
   const { currentUser, currentRole } = useTaskStore();
   const { toast } = useToast();
   const [suggesting, setSuggesting] = useState(false);
@@ -93,6 +94,7 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
   const getUserById = (id: string) => users.find(u => u._id === id);
   const assignee = getUserById(task.assigneeId);
   const reporter = getUserById(task.reportedBy);
+  const project = task.projectId ? projects.find(p => p._id === task.projectId) : null;
 
   const allSubtasks = [...task.suggestedSubtasks, ...subtasks];
   const subtasksDone = allSubtasks.filter((s) => s.status === "DONE").length;
@@ -351,6 +353,15 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
                 <p className="font-medium">{reporter?.name}</p>
               </div>
             </div>
+            {project && (
+              <div className="flex items-center gap-2 col-span-2">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Project</p>
+                  <p className="font-medium">{project.name}</p>
+                </div>
+              </div>
+            )}
             {task.helperIds && task.helperIds.length > 0 && (
               <div className="flex items-start gap-2 col-span-2">
                 <HandHelping className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />

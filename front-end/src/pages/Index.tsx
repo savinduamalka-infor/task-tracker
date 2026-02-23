@@ -176,6 +176,7 @@ const Index = () => {
           parentTaskId: t.parentTaskId || undefined,
           isSubtask: t.isSubtask || false,
           parentTaskTitle: undefined,
+          projectId: t.projectId || undefined,
         }));
         const taskMap = new Map(allTasks.map(t => [t.id, t]));
         allTasks.forEach(t => {
@@ -809,6 +810,7 @@ const Index = () => {
           setSheetOpen(false);
           loadTasks();
         }}
+        projects={projects}
       />
 
       <CreateTaskDialog open={createOpen} onClose={() => { setCreateOpen(false); loadTasks(); }} />
