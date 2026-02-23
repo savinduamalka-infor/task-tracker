@@ -60,7 +60,13 @@ export function TaskBoard({ onTaskClick, tasks, users, onTaskDrop }: TaskBoardPr
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {columns.map((col) => {
-        const colTasks = tasks.filter((t) => t.status === col.status);
+        const colTasks = tasks
+          .filter((t) => t.status === col.status)
+          .sort((a, b) => {
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+          });
         const isDragOver = dragOverColumn === col.status;
 
         return (
