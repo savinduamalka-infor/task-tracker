@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
@@ -58,6 +58,24 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
   const [addingSubtasks, setAddingSubtasks] = useState(false);
   const [addedSubtaskIndices, setAddedSubtaskIndices] = useState<Set<number>>(new Set());
 
+  // Load subtasks from sessionStorage when task changes
+  useEffect(() => {
+    if (task?.id) {
+      const stored = sessionStorage.getItem(`subtasks_${task.id}`);
+      if (stored) {
+        try {
+          setSubtasks(JSON.parse(stored));
+        } catch (e) {
+          setSubtasks([]);
+        }
+      } else {
+        setSubtasks([]);
+      }
+    } else {
+      setSubtasks([]);
+    }
+  }, [task?.id]);
+
   // Request Help state
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [helpNote, setHelpNote] = useState("");
@@ -102,22 +120,31 @@ export function TaskDetailSheet({ task, open, onClose, onAddUpdate, users, onSub
   const subtaskProgress = subtasksTotal > 0 ? Math.round((subtasksDone / subtasksTotal) * 100) : 0;
 
   const handleSuggestSubtasks = async () => {
+    if (!task) return;
     setSuggesting(true);
     setAddedSubtaskIndices(new Set());
     setSelectedSubtaskIndices(new Set());
     try {
       const response = await subtaskApi.suggest(task.title, task.description || "");
-      if (response.data.subtasks && response.data.subtasks.length > 0) {
-        const newSubtasks = response.data.subtasks.map((st: any, i: number) => ({
+      const subtaskData = response.data.subtasks || [];
+      if (subtaskData.length > 0) {
+        const newSubtasks = subtaskData.map((st: any, i: number) => ({
           id: `st-${task.id}-${Date.now()}-${i}`,
           title: st.title,
           description: st.description,
           status: "TODO",
         }));
         setSubtasks(newSubtasks);
+        sessionStorage.setItem(`subtasks_${task.id}`, JSON.stringify(newSubtasks));
+        toast({ title: "Subtasks Generated", description: `${newSubtasks.length} subtasks suggested.` });
+      } else {
+        setSubtasks([]);
+        sessionStorage.removeItem(`subtasks_${task.id}`);
+        toast({ title: "No Subtasks", description: "AI couldn't generate subtasks. Try again.", variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to generate subtasks:", error);
+      toast({ title: "Error", description: "Failed to generate subtasks. Please try again.", variant: "destructive" });
     } finally {
       setSuggesting(false);
     }

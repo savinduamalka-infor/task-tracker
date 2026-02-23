@@ -3,42 +3,78 @@ import axios from "axios";
 const LLM_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 export async function generateSubtasks(taskTitle: string, taskDescription: string) {
-  try {
-    const response = await axios.post(
-      LLM_API_URL,
-      {
-        model: "llama-3.1-8b-instant",
-        messages: [
-          {
-            role: "system",
-            content: "You are a task breakdown assistant. Given a task title and description, generate exactly 3-5 actionable subtasks. Output must be ONLY a valid JSON array of objects, where each object has exactly two fields: 'title' (string) and 'description' (string). Keep subtasks concise, specific, and relevant. Do not include any text before or after the JSON array. Do not add explanations, comments, or invalid JSON. Example output: [{'title': 'Step 1', 'description': 'Do this'}, {'title': 'Step 2', 'description': 'Do that'}]."
+  const maxRetries = 2;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[Subtasks] Attempt ${attempt}/${maxRetries} for: "${taskTitle}"`);
+      
+      const response = await axios.post(
+        LLM_API_URL,
+        {
+          model: "llama-3.1-8b-instant",
+          messages: [
+            {
+              role: "system",
+              content: "You are a task breakdown assistant. You MUST respond with ONLY a valid JSON array. No explanations, no markdown, no extra text. Just the JSON array."
+            },
+            {
+              role: "user",
+              content: `Break this task into 3-5 subtasks:\n\nTask: ${taskTitle}\nDescription: ${taskDescription || 'No description'}\n\nRespond with ONLY this JSON format:\n[{"title": "Subtask 1", "description": "Details"}, {"title": "Subtask 2", "description": "Details"}]`
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 600
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${process.env.LLM_API_KEY}`,
+            "Content-Type": "application/json"
           },
-          {
-            role: "user",
-            content: `Task: ${taskTitle}\nDescription: ${taskDescription}\n\nGenerate subtasks as JSON array.`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 500
-      },
-      {
-        headers: {
-          "Authorization": `Bearer ${process.env.LLM_API_KEY}`,
-          "Content-Type": "application/json"
+          timeout: 20000
         }
-      }
-    );
+      );
 
-    const content = response.data.choices[0].message.content;
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const content = response.data.choices[0]?.message?.content?.trim();
+      if (!content) {
+        console.error(`[Subtasks] Attempt ${attempt}: Empty response`);
+        if (attempt < maxRetries) continue;
+        return [];
+      }
+
+      console.log(`[Subtasks] Attempt ${attempt} raw response:`, content.substring(0, 200));
+
+      let parsed;
+      try {
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          parsed = JSON.parse(content);
+        }
+      } catch (parseError) {
+        console.error(`[Subtasks] Attempt ${attempt}: Parse failed`);
+        if (attempt < maxRetries) continue;
+        return [];
+      }
+
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed.every(item => item.title && item.description)) {
+        console.log(`[Subtasks] Success: ${parsed.length} subtasks generated`);
+        return parsed;
+      }
+
+      console.error(`[Subtasks] Attempt ${attempt}: Invalid array structure`);
+      if (attempt < maxRetries) continue;
+      return [];
+      
+    } catch (error: any) {
+      console.error(`[Subtasks] Attempt ${attempt} error:`, error.response?.data?.error || error.message);
+      if (attempt < maxRetries && error.response?.status !== 401) continue;
+      return [];
     }
-    return [];
-  } catch (error) {
-    console.error("LLM subtask generation error:", error);
-    return [];
   }
+  
+  return [];
 }
 
 export interface DailySummaryTask {
