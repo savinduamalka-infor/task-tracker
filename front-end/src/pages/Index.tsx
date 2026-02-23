@@ -438,6 +438,7 @@ const Index = () => {
     await assignRequestApi.reject(requestId, { resolvedNote });
     toast({ title: "Request Rejected", description: "The help request has been declined." });
     await loadPendingAssignRequests();
+    loadTasks();
   };
 
   const handleSendJoinRequest = async (teamId: string) => {
