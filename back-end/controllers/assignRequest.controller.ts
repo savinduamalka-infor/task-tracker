@@ -210,7 +210,7 @@ export const approveAssignRequest = async (req: Request, res: Response) => {
       $addToSet: { helperIds: newHelperId },
       $push: {
         updates: {
-          note: `${helperUser?.name || "A new member"} added as a helper${resolvedNote ? ` — ${resolvedNote}` : ""}`,
+          note: `Help request approved — ${helperUser?.name || "A new member"} added as a helper${resolvedNote ? `. Reason: ${resolvedNote}` : ""}`,
           updatedBy: user.id,
           date: new Date(),
         },
@@ -259,7 +259,7 @@ export const rejectAssignRequest = async (req: Request, res: Response) => {
     await TaskModel.findByIdAndUpdate(request.taskId, {
       $push: {
         updates: {
-          note: `Help request declined${resolvedNote ? `: ${resolvedNote}` : ""}`,
+          note: `Help request rejected${resolvedNote ? `. Reason: ${resolvedNote}` : ""}`,
           updatedBy: user.id,
           date: new Date(),
         },
