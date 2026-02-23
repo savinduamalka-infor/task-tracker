@@ -30,20 +30,32 @@ async function seed() {
     
     console.log("Cleared existing data");
 
-    // Create Users with authentication - Infor Sri Lanka Team
+    // Create Users
     const userConfigs = [
+      // AppXpress Team
       { email: "rajitha.fernando@infor.com", name: "Rajitha Fernando", role: "Lead", jobTitle: "Engineering Manager" },
+      { email: "savindu.amalka@infor.com", name: "Savindu Amalka", role: "Member", jobTitle: "Development Intern" },
       { email: "kasun.perera@infor.com", name: "Kasun Perera", role: "Member", jobTitle: "Senior Software Engineer" },
-      { email: "nimali.silva@infor.com", name: "Nimali Silva", role: "Member", jobTitle: "Full Stack Developer" },
-      { email: "tharindu.jayasinghe@infor.com", name: "Tharindu Jayasinghe", role: "Member", jobTitle: "Backend Developer" },
+      { email: "nimali.silva@infor.com", name: "Nimali Silva", role: "Member", jobTitle: "Software Engineer" },
+      { email: "tharindu.jayasinghe@infor.com", name: "Tharindu Jayasinghe", role: "Member", jobTitle: "Software Engineer" },
       { email: "dilini.wickramasinghe@infor.com", name: "Dilini Wickramasinghe", role: "Member", jobTitle: "Frontend Developer" },
-      { email: "pradeep.gunasekara@infor.com", name: "Pradeep Gunasekara", role: "Lead", jobTitle: "QA Manager" },
-      { email: "sanduni.rathnayake@infor.com", name: "Sanduni Rathnayake", role: "Member", jobTitle: "QA Engineer" },
-      { email: "chamara.bandara@infor.com", name: "Chamara Bandara", role: "Member", jobTitle: "Test Automation Engineer" },
+      { email: "chaminda.rathnayake@infor.com", name: "Chaminda Rathnayake", role: "Member", jobTitle: "Backend Developer" },
+      { email: "sanduni.fernando@infor.com", name: "Sanduni Fernando", role: "Member", jobTitle: "Full Stack Developer" },
+      { email: "thilini.jayasuriya@infor.com", name: "Thilini Jayasuriya", role: "Member", jobTitle: "UI/UX Designer" },
+      { email: "ruwan.bandara@infor.com", name: "Ruwan Bandara", role: "Member", jobTitle: "Quality Assurance Analyst" },
+      { email: "malsha.wijesinghe@infor.com", name: "Malsha Wijesinghe", role: "Member", jobTitle: "Technical Writer" },
+      
+      // CloudSuite Industrial Team
+      { email: "pradeep.gunasekara@infor.com", name: "Pradeep Gunasekara", role: "Lead", jobTitle: "Product Manager" },
+      { email: "ashan.perera@infor.com", name: "Ashan Perera", role: "Member", jobTitle: "Senior Software Engineer" },
+      { email: "sachini.de.silva@infor.com", name: "Sachini De Silva", role: "Member", jobTitle: "Business Analyst" },
+      { email: "nuwan.jayawardena@infor.com", name: "Nuwan Jayawardena", role: "Member", jobTitle: "Software Engineer" },
+      { email: "ishara.kumari@infor.com", name: "Ishara Kumari", role: "Member", jobTitle: "Quality Assurance Analyst" },
+      
+      // Infrastructure Team
       { email: "ruwan.dissanayake@infor.com", name: "Ruwan Dissanayake", role: "Lead", jobTitle: "DevOps Manager" },
-      { email: "malsha.fernando@infor.com", name: "Malsha Fernando", role: "Member", jobTitle: "DevOps Engineer" },
-      { email: "sachini.wijesinghe@infor.com", name: "Sachini Wijesinghe", role: "Member", jobTitle: "UI/UX Designer" },
-      { email: "ashan.rodrigo@infor.com", name: "Ashan Rodrigo", role: "Member", jobTitle: "Business Analyst" },
+      { email: "lakshan.silva@infor.com", name: "Lakshan Silva", role: "Member", jobTitle: "DevOps Engineer" },
+      { email: "nadeeka.fernando@infor.com", name: "Nadeeka Fernando", role: "Member", jobTitle: "Cloud Engineer" },
     ];
 
     const users: any[] = [];
@@ -62,126 +74,277 @@ async function seed() {
 
     console.log(`Created ${users.length} users`);
 
-    const [rajitha, kasun, nimali, tharindu, dilini, pradeep, sanduni, chamara, ruwan, malsha] = users;
+    const [rajitha, savindu, kasun, nimali, tharindu, dilini, chaminda, sanduni, thilini, ruwan, malsha, 
+           pradeep, ashan, sachini, nuwan, ishara, 
+           ruwanD, lakshan, nadeeka] = users;
 
     // Create Teams
-    const engineeringTeam = await Team.create({
-      name: "Infor CloudSuite Engineering",
-      description: "Core engineering team working on CloudSuite Industrial modules",
+    const appXpressTeam = await Team.create({
+      name: "AppXpress",
+      description: "Low-code development platform team for rapid application development on CloudSuite",
       createdBy: rajitha._id,
-      members: [rajitha._id, kasun._id, nimali._id, tharindu._id, dilini._id],
+      members: [rajitha._id, savindu._id, kasun._id, nimali._id, tharindu._id, dilini._id, chaminda._id, sanduni._id, thilini._id, ruwan._id, malsha._id],
     });
 
-    const qaTeam = await Team.create({
-      name: "Infor Quality Assurance",
-      description: "QA team ensuring product quality and test automation",
+    const cloudSuiteTeam = await Team.create({
+      name: "CloudSuite Industrial",
+      description: "Enterprise resource planning and supply chain management solutions",
       createdBy: pradeep._id,
-      members: [pradeep._id, sanduni._id, chamara._id],
+      members: [pradeep._id, ashan._id, sachini._id, nuwan._id, ishara._id],
     });
 
-    const devopsTeam = await Team.create({
-      name: "Infor DevOps & Infrastructure",
-      description: "DevOps team managing CI/CD pipelines and cloud infrastructure",
-      createdBy: ruwan._id,
-      members: [ruwan._id, malsha._id],
+    const infraTeam = await Team.create({
+      name: "Infrastructure",
+      description: "Cloud infrastructure, DevOps, and platform engineering",
+      createdBy: ruwanD._id,
+      members: [ruwanD._id, lakshan._id, nadeeka._id],
     });
 
     console.log("Created 3 teams");
 
     // Create Projects
+    const formBuilderProject = await ProjectModel.create({
+      name: "Form Builder v2.0",
+      description: "Next-generation drag-and-drop form builder with advanced validation",
+      teamId: appXpressTeam._id.toString(),
+      createdBy: rajitha._id,
+    });
+
+    const workflowEngineProject = await ProjectModel.create({
+      name: "Workflow Automation Engine",
+      description: "Visual workflow designer for business process automation",
+      teamId: appXpressTeam._id.toString(),
+      createdBy: rajitha._id,
+    });
+
+    const mobileAppProject = await ProjectModel.create({
+      name: "Mobile SDK",
+      description: "Native mobile SDK for iOS and Android app development",
+      teamId: appXpressTeam._id.toString(),
+      createdBy: rajitha._id,
+    });
+
     const cloudSuiteProject = await ProjectModel.create({
       name: "CloudSuite Industrial v23.4",
-      description: "Major release with new features and performance improvements",
-      teamId: engineeringTeam._id.toString(),
-      createdBy: rajitha._id,
-    });
-
-    const apiGatewayProject = await ProjectModel.create({
-      name: "API Gateway Modernization",
-      description: "Modernize authentication and security layer",
-      teamId: engineeringTeam._id.toString(),
-      createdBy: rajitha._id,
-    });
-
-    const qaAutomationProject = await ProjectModel.create({
-      name: "Test Automation Framework",
-      description: "Build comprehensive automated testing suite",
-      teamId: qaTeam._id.toString(),
+      description: "ERP system for manufacturing and distribution companies",
+      teamId: cloudSuiteTeam._id.toString(),
       createdBy: pradeep._id,
     });
 
     const infraProject = await ProjectModel.create({
-      name: "Cloud Infrastructure Upgrade",
-      description: "Migrate to Kubernetes and modernize CI/CD",
-      teamId: devopsTeam._id.toString(),
-      createdBy: ruwan._id,
+      name: "AWS Migration",
+      description: "Migrate on-premise infrastructure to AWS cloud",
+      teamId: infraTeam._id.toString(),
+      createdBy: ruwanD._id,
     });
 
-    console.log("Created 4 projects");
+    console.log("Created 5 projects");
 
     // Update users with teamIds
     await db.collection("user").updateMany(
-      { _id: { $in: [rajitha._id, kasun._id, nimali._id, tharindu._id, dilini._id].map(id => new mongoose.Types.ObjectId(id)) } },
-      { $set: { teamId: engineeringTeam._id.toString() } }
+      { _id: { $in: [rajitha, savindu, kasun, nimali, tharindu, dilini, chaminda, sanduni, thilini, ruwan, malsha].map(u => new mongoose.Types.ObjectId(u._id)) } },
+      { $set: { teamId: appXpressTeam._id.toString() } }
     );
     await db.collection("user").updateMany(
-      { _id: { $in: [pradeep._id, sanduni._id, chamara._id].map(id => new mongoose.Types.ObjectId(id)) } },
-      { $set: { teamId: qaTeam._id.toString() } }
+      { _id: { $in: [pradeep, ashan, sachini, nuwan, ishara].map(u => new mongoose.Types.ObjectId(u._id)) } },
+      { $set: { teamId: cloudSuiteTeam._id.toString() } }
     );
     await db.collection("user").updateMany(
-      { _id: { $in: [ruwan._id, malsha._id].map(id => new mongoose.Types.ObjectId(id)) } },
-      { $set: { teamId: devopsTeam._id.toString() } }
+      { _id: { $in: [ruwanD, lakshan, nadeeka].map(u => new mongoose.Types.ObjectId(u._id)) } },
+      { $set: { teamId: infraTeam._id.toString() } }
     );
 
-    // Create Tasks for Engineering Team
-    const engTasks = await TaskModel.create([
+    // Create Tasks
+    const tasks = await TaskModel.create([
+      // AppXpress Team Tasks
       {
-        title: "Implement CloudSuite API Gateway Authentication",
-        summary: "Add OAuth 2.0 authentication layer for CloudSuite API Gateway",
-        description: "Implement secure OAuth 2.0 authentication mechanism for the CloudSuite API Gateway to ensure all API requests are properly authenticated and authorized. Include token refresh logic and rate limiting.",
-        assigneeId: kasun._id,
-        helperIds: [tharindu._id],
+        title: "Build Drag-and-Drop Form Designer Component",
+        summary: "Create React-based visual form builder with drag-and-drop functionality",
+        description: "Develop intuitive drag-and-drop interface for Form Builder v2.0. Support field types: text, number, date, dropdown, checkbox, file upload. Include real-time preview and responsive design.",
+        assigneeId: dilini._id,
+        helperIds: [thilini._id],
         status: "IN_PROGRESS",
-        priority: "High",
-        startDate: new Date("2025-01-20"),
-        dueDate: new Date("2025-02-05"),
-        reporterId: rajitha._id,
-        teamId: engineeringTeam._id.toString(),
-        projectId: apiGatewayProject._id.toString(),
-        updates: [
-          {
-            date: new Date("2025-01-22"),
-            note: "Completed OAuth 2.0 flow design and started implementation of token generation service",
-            updatedBy: kasun._id,
-          },
-          {
-            date: new Date("2025-01-24"),
-            note: "Implemented JWT token generation and validation. Working on refresh token mechanism",
-            updatedBy: kasun._id,
-          },
-        ],
-      },
-      {
-        title: "Migrate CloudSuite Database to PostgreSQL 15",
-        summary: "Upgrade database from PostgreSQL 12 to PostgreSQL 15 for performance improvements",
-        description: "Plan and execute migration of CloudSuite production database from PostgreSQL 12 to PostgreSQL 15. Includes schema validation, data migration scripts, and rollback procedures.",
-        assigneeId: tharindu._id,
-        status: "BLOCKED",
         priority: "High",
         startDate: new Date("2025-01-15"),
         dueDate: new Date("2025-02-10"),
         reporterId: rajitha._id,
-        teamId: engineeringTeam._id.toString(),
-        projectId: cloudSuiteProject._id.toString(),
+        teamId: appXpressTeam._id.toString(),
+        projectId: formBuilderProject._id.toString(),
         updates: [
           {
-            date: new Date("2025-01-23"),
-            note: "Blocked waiting for DBA approval on migration window",
-            blockedReason: "Waiting for database administrator approval for production migration window. Need 4-hour downtime window.",
-            updatedBy: tharindu._id,
+            date: new Date("2025-01-20"),
+            note: "Completed UI mockups and component architecture design. Started implementing drag-and-drop using react-beautiful-dnd library",
+            updatedBy: dilini._id,
+          },
+          {
+            date: new Date("2025-01-24"),
+            note: "Implemented 8 field types with drag-and-drop. Working on field property editor panel",
+            updatedBy: dilini._id,
           },
         ],
       },
+      {
+        title: "Implement Form Validation Engine",
+        summary: "Build advanced validation rules engine for form fields",
+        description: "Create flexible validation engine supporting regex patterns, conditional logic, cross-field validation, and custom JavaScript validators. Include real-time validation feedback.",
+        assigneeId: chaminda._id,
+        helperIds: [kasun._id],
+        status: "IN_PROGRESS",
+        priority: "High",
+        startDate: new Date("2025-01-18"),
+        dueDate: new Date("2025-02-08"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: formBuilderProject._id.toString(),
+        updates: [
+          {
+            date: new Date("2025-01-22"),
+            note: "Completed validation rule parser. Implemented regex and required field validators",
+            updatedBy: chaminda._id,
+          },
+          {
+            date: new Date("2025-01-24"),
+            note: "Added conditional validation logic. Working on cross-field validation dependencies",
+            updatedBy: chaminda._id,
+          },
+        ],
+      },
+      {
+        title: "Design Workflow Visual Editor UI",
+        summary: "Create intuitive visual workflow designer interface",
+        description: "Design and prototype visual workflow editor with node-based interface. Support drag-and-drop nodes for actions, conditions, loops, and integrations. Include zoom, pan, and auto-layout features.",
+        assigneeId: thilini._id,
+        helperIds: [dilini._id],
+        status: "IN_PROGRESS",
+        priority: "High",
+        startDate: new Date("2025-01-10"),
+        dueDate: new Date("2025-02-05"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: workflowEngineProject._id.toString(),
+        updates: [
+          {
+            date: new Date("2025-01-15"),
+            note: "Completed wireframes for workflow editor. Created high-fidelity mockups in Figma",
+            updatedBy: thilini._id,
+          },
+          {
+            date: new Date("2025-01-23"),
+            note: "Finalized node designs and connection styles. Started React Flow implementation",
+            updatedBy: dilini._id,
+          },
+        ],
+      },
+      {
+        title: "Develop Workflow Execution Engine",
+        summary: "Build backend engine to execute workflow definitions",
+        description: "Implement workflow execution engine with support for sequential and parallel execution, error handling, retry logic, and state persistence. Use Node.js with Bull queue for job processing.",
+        assigneeId: chaminda._id,
+        status: "BLOCKED",
+        priority: "High",
+        startDate: new Date("2025-01-20"),
+        dueDate: new Date("2025-02-15"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: workflowEngineProject._id.toString(),
+        updates: [
+          {
+            date: new Date("2025-01-24"),
+            note: "Blocked - waiting for infrastructure team to provision Redis cluster for Bull queue",
+            updatedBy: chaminda._id,
+            blockedReason: "Redis cluster not available",
+          },
+        ],
+      },
+      {
+        title: "Build iOS SDK for Mobile App Development",
+        summary: "Create native iOS SDK with Swift",
+        description: "Develop iOS SDK for mobile applications. Include UI components, data sync, offline support, and authentication modules. Support iOS 14+.",
+        assigneeId: kasun._id,
+        status: "IN_PROGRESS",
+        priority: "Medium",
+        startDate: new Date("2025-01-12"),
+        dueDate: new Date("2025-02-20"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: mobileAppProject._id.toString(),
+        updates: [
+          {
+            date: new Date("2025-01-18"),
+            note: "Completed authentication module and data sync framework. Working on UI component library",
+            updatedBy: kasun._id,
+          },
+        ],
+      },
+      {
+        title: "Implement Form Conditional Logic Engine",
+        summary: "Add show/hide field logic based on user input",
+        description: "Build conditional logic engine for forms - show/hide fields, enable/disable inputs, and change field properties based on other field values. Support complex AND/OR conditions.",
+        assigneeId: savindu._id,
+        helperIds: [nimali._id],
+        status: "IN_PROGRESS",
+        priority: "Medium",
+        startDate: new Date("2025-01-22"),
+        dueDate: new Date("2025-02-12"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: formBuilderProject._id.toString(),
+        updates: [
+          {
+            date: new Date("2025-01-24"),
+            note: "Implemented condition parser and basic show/hide logic. Testing with sample forms",
+            updatedBy: savindu._id,
+          },
+        ],
+      },
+      {
+        title: "Design Mobile App Component Library",
+        summary: "Create reusable UI components for mobile SDK",
+        description: "Design consistent UI component library for mobile apps - buttons, inputs, cards, lists, modals. Follow iOS and Android design guidelines.",
+        assigneeId: thilini._id,
+        status: "TODO",
+        priority: "Medium",
+        startDate: new Date("2025-01-25"),
+        dueDate: new Date("2025-02-18"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: mobileAppProject._id.toString(),
+      },
+      {
+        title: "Write API Documentation for Form Builder",
+        summary: "Document REST APIs for form creation and submission",
+        description: "Create comprehensive API documentation for Form Builder endpoints. Include request/response examples, error codes, and authentication details. Use OpenAPI 3.0 specification.",
+        assigneeId: malsha._id,
+        status: "TODO",
+        priority: "Low",
+        startDate: new Date("2025-02-01"),
+        dueDate: new Date("2025-02-15"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: formBuilderProject._id.toString(),
+      },
+      {
+        title: "Implement QA Automation Framework",
+        summary: "Set up automated testing for form builder",
+        description: "Build end-to-end test automation framework using Playwright. Cover form creation, validation, submission, and conditional logic scenarios.",
+        assigneeId: ruwan._id,
+        status: "IN_PROGRESS",
+        priority: "High",
+        startDate: new Date("2025-01-16"),
+        dueDate: new Date("2025-02-05"),
+        reporterId: rajitha._id,
+        teamId: appXpressTeam._id.toString(),
+        projectId: formBuilderProject._id.toString(),
+        updates: [
+          {
+            date: new Date("2025-01-23"),
+            note: "Set up Playwright framework and created 15 test cases for form creation and validation",
+            updatedBy: ruwan._id,
+          },
+        ],
+      },
+      
+      // CloudSuite Industrial Team Tasks
       {
         title: "Develop Inventory Management Dashboard",
         summary: "Create real-time inventory tracking dashboard for CloudSuite Industrial",
@@ -192,81 +355,19 @@ async function seed() {
         priority: "Medium",
         startDate: new Date("2025-01-18"),
         dueDate: new Date("2025-02-15"),
-        reporterId: rajitha._id,
-        teamId: engineeringTeam._id.toString(),
+        reporterId: pradeep._id,
+        teamId: cloudSuiteTeam._id.toString(),
         projectId: cloudSuiteProject._id.toString(),
         updates: [
           {
-            date: new Date("2025-01-20"),
+            date: new Date("2025-01-23"),
             note: "Completed UI mockups and started React component development",
             updatedBy: nimali._id,
           },
           {
-            date: new Date("2025-01-23"),
+            date: new Date("2025-01-20"),
             note: "Implemented main dashboard layout and integrated Chart.js for data visualization",
             updatedBy: nimali._id,
-          },
-          {
-            date: new Date("2025-01-24"),
-            note: "Added real-time WebSocket connection for live inventory updates",
-            updatedBy: dilini._id,
-          },
-        ],
-      },
-      {
-        title: "Optimize CloudSuite Report Generation Performance",
-        summary: "Improve report generation speed by 50% through query optimization",
-        description: "Analyze and optimize slow-running SQL queries in report generation module. Implement database indexing, query caching, and pagination for large datasets.",
-        assigneeId: tharindu._id,
-        status: "TODO",
-        priority: "Medium",
-        startDate: new Date("2025-02-01"),
-        dueDate: new Date("2025-02-20"),
-        reporterId: rajitha._id,
-        teamId: engineeringTeam._id.toString(),
-        projectId: cloudSuiteProject._id.toString(),
-      },
-      {
-        title: "Update CloudSuite User Documentation",
-        summary: "Refresh user documentation for CloudSuite v23.4 release",
-        description: "Update user guides, API documentation, and video tutorials to reflect new features in CloudSuite v23.4. Include screenshots and step-by-step instructions.",
-        assigneeId: dilini._id,
-        status: "TODO",
-        priority: "Low",
-        startDate: new Date("2025-02-05"),
-        dueDate: new Date("2025-02-25"),
-        reporterId: rajitha._id,
-        teamId: engineeringTeam._id.toString(),
-        projectId: cloudSuiteProject._id.toString(),
-      },
-      {
-        title: "Fix Critical Security Vulnerability in Authentication Module",
-        summary: "Patch SQL injection vulnerability in login endpoint",
-        description: "Identified SQL injection vulnerability in authentication module. Implement parameterized queries and input validation to prevent SQL injection attacks.",
-        assigneeId: kasun._id,
-        status: "DONE",
-        priority: "High",
-        startDate: new Date("2025-01-10"),
-        dueDate: new Date("2025-01-18"),
-        reporterId: rajitha._id,
-        teamId: engineeringTeam._id.toString(),
-        projectId: apiGatewayProject._id.toString(),
-        completedAt: new Date("2025-01-17"),
-        updates: [
-          {
-            date: new Date("2025-01-12"),
-            note: "Identified vulnerable code sections and created fix plan",
-            updatedBy: kasun._id,
-          },
-          {
-            date: new Date("2025-01-15"),
-            note: "Implemented parameterized queries across all authentication endpoints",
-            updatedBy: kasun._id,
-          },
-          {
-            date: new Date("2025-01-17"),
-            note: "Completed security testing and deployed fix to production",
-            updatedBy: kasun._id,
           },
         ],
       },
@@ -279,259 +380,192 @@ async function seed() {
         priority: "Medium",
         startDate: new Date("2025-01-05"),
         dueDate: new Date("2025-01-20"),
-        reporterId: rajitha._id,
-        teamId: engineeringTeam._id.toString(),
+        reporterId: pradeep._id,
+        teamId: cloudSuiteTeam._id.toString(),
         projectId: cloudSuiteProject._id.toString(),
-        completedAt: new Date("2025-01-19"),
         updates: [
-          {
-            date: new Date("2025-01-08"),
-            note: "Set up react-i18next and created translation files for Sinhala and Tamil",
-            updatedBy: dilini._id,
-          },
           {
             date: new Date("2025-01-19"),
             note: "Completed all translations and tested language switching functionality",
             updatedBy: dilini._id,
           },
-        ],
-      },
-    ]);
-
-    // Create Tasks for QA Team
-    const qaTasks = await TaskModel.create([
-      {
-        title: "Automate Regression Test Suite for CloudSuite v23.4",
-        summary: "Create automated test scripts for all critical user flows",
-        description: "Develop comprehensive automated regression test suite using Selenium and Cypress for CloudSuite v23.4 release. Cover all critical business workflows.",
-        assigneeId: chamara._id,
-        helperIds: [sanduni._id],
-        status: "IN_PROGRESS",
-        priority: "High",
-        startDate: new Date("2025-01-15"),
-        dueDate: new Date("2025-02-08"),
-        reporterId: pradeep._id,
-        teamId: qaTeam._id.toString(),
-        projectId: qaAutomationProject._id.toString(),
-        updates: [
           {
-            date: new Date("2025-01-18"),
-            note: "Completed test case design for inventory management module",
-            updatedBy: chamara._id,
-          },
-          {
-            date: new Date("2025-01-23"),
-            note: "Implemented 45 automated test cases covering order processing workflows",
-            updatedBy: chamara._id,
+            date: new Date("2025-01-08"),
+            note: "Set up react-i18next and created translation files for Sinhala and Tamil",
+            updatedBy: dilini._id,
           },
         ],
       },
       {
-        title: "Performance Testing for CloudSuite API Gateway",
-        summary: "Conduct load testing to ensure API can handle 10,000 concurrent users",
-        description: "Execute performance testing using JMeter to validate API Gateway can handle expected production load of 10,000 concurrent users with response time under 200ms.",
-        assigneeId: sanduni._id,
+        title: "Optimize CloudSuite Report Generation Performance",
+        summary: "Improve report generation speed for large datasets",
+        description: "Optimize SQL queries and implement caching for CloudSuite report generation. Target 50% reduction in report generation time for datasets over 100K records.",
+        assigneeId: tharindu._id,
         status: "TODO",
         priority: "High",
         startDate: new Date("2025-02-01"),
-        dueDate: new Date("2025-02-12"),
+        dueDate: new Date("2025-02-22"),
         reporterId: pradeep._id,
-        teamId: qaTeam._id.toString(),
-        projectId: qaAutomationProject._id.toString(),
+        teamId: cloudSuiteTeam._id.toString(),
+        projectId: cloudSuiteProject._id.toString(),
       },
       {
-        title: "Security Penetration Testing for CloudSuite",
-        summary: "Conduct comprehensive security audit and penetration testing",
-        description: "Perform security penetration testing covering OWASP Top 10 vulnerabilities, authentication bypass attempts, and data exposure risks.",
-        assigneeId: sanduni._id,
+        title: "Fix Critical Security Vulnerability in Authentication Module",
+        summary: "Patch SQL injection vulnerability in login endpoint",
+        description: "Fix critical SQL injection vulnerability discovered in CloudSuite authentication module. Implement parameterized queries and add input validation.",
+        assigneeId: kasun._id,
         status: "DONE",
         priority: "High",
-        startDate: new Date("2025-01-08"),
-        dueDate: new Date("2025-01-22"),
+        startDate: new Date("2025-01-10"),
+        dueDate: new Date("2025-01-15"),
         reporterId: pradeep._id,
-        teamId: qaTeam._id.toString(),
-        projectId: qaAutomationProject._id.toString(),
-        completedAt: new Date("2025-01-21"),
+        teamId: cloudSuiteTeam._id.toString(),
+        projectId: cloudSuiteProject._id.toString(),
         updates: [
           {
-            date: new Date("2025-01-21"),
-            note: "Completed penetration testing. Found and reported 3 medium-severity vulnerabilities to engineering team",
-            updatedBy: sanduni._id,
+            date: new Date("2025-01-14"),
+            note: "Implemented parameterized queries and added comprehensive input validation. Passed security audit",
+            updatedBy: kasun._id,
           },
         ],
       },
-    ]);
-
-    // Create Tasks for DevOps Team
-    const devopsTasks = await TaskModel.create([
+      
+      // Infrastructure Team Tasks
       {
-        title: "Set Up Kubernetes Cluster for CloudSuite Production",
-        summary: "Deploy production-ready Kubernetes cluster on AWS EKS",
-        description: "Configure and deploy highly available Kubernetes cluster on AWS EKS for CloudSuite production environment. Include auto-scaling, monitoring, and disaster recovery setup.",
-        assigneeId: malsha._id,
+        title: "Migrate Production Database to AWS RDS",
+        summary: "Move on-premise PostgreSQL to AWS RDS",
+        description: "Plan and execute migration of production PostgreSQL database to AWS RDS. Ensure zero downtime and data integrity. Set up automated backups and monitoring.",
+        assigneeId: lakshan._id,
         status: "IN_PROGRESS",
         priority: "High",
-        startDate: new Date("2025-01-12"),
-        dueDate: new Date("2025-02-02"),
-        reporterId: ruwan._id,
-        teamId: devopsTeam._id.toString(),
-        projectId: infraProject._id.toString(),
-        updates: [
-          {
-            date: new Date("2025-01-20"),
-            note: "Completed EKS cluster setup with 3 worker nodes. Configured ingress controller and cert-manager",
-            updatedBy: malsha._id,
-          },
-          {
-            date: new Date("2025-01-24"),
-            note: "Implemented Prometheus and Grafana for cluster monitoring. Setting up auto-scaling policies",
-            updatedBy: malsha._id,
-          },
-        ],
-      },
-      {
-        title: "Implement CI/CD Pipeline for CloudSuite Microservices",
-        summary: "Create automated deployment pipeline using GitHub Actions",
-        description: "Build end-to-end CI/CD pipeline for CloudSuite microservices using GitHub Actions. Include automated testing, security scanning, and blue-green deployment strategy.",
-        assigneeId: malsha._id,
-        status: "IN_PROGRESS",
-        priority: "High",
-        startDate: new Date("2025-01-18"),
+        startDate: new Date("2025-01-15"),
         dueDate: new Date("2025-02-10"),
-        reporterId: malsha._id,
-        teamId: devopsTeam._id.toString(),
+        reporterId: ruwanD._id,
+        teamId: infraTeam._id.toString(),
         projectId: infraProject._id.toString(),
         updates: [
           {
             date: new Date("2025-01-22"),
-            note: "Configured GitHub Actions workflows for build and test stages. Integrated SonarQube for code quality checks",
-            updatedBy: ruwan._id,
+            note: "Completed RDS instance setup and tested database replication. Planning cutover for next week",
+            updatedBy: lakshan._id,
           },
         ],
       },
       {
-        title: "Configure AWS CloudWatch Alerts for Production Monitoring",
-        summary: "Set up comprehensive monitoring and alerting for production systems",
-        description: "Configure CloudWatch alarms for CPU usage, memory utilization, API response times, and error rates. Integrate with PagerDuty for on-call notifications.",
-        assigneeId: malsha._id,
+        title: "Set Up Kubernetes Cluster on EKS",
+        summary: "Deploy production-ready EKS cluster",
+        description: "Configure AWS EKS cluster for microservices deployment. Include auto-scaling, load balancing, and monitoring with Prometheus and Grafana.",
+        assigneeId: nadeeka._id,
+        status: "IN_PROGRESS",
+        priority: "High",
+        startDate: new Date("2025-01-20"),
+        dueDate: new Date("2025-02-15"),
+        reporterId: ruwanD._id,
+        teamId: infraTeam._id.toString(),
+        projectId: infraProject._id.toString(),
+        updates: [
+          {
+            date: new Date("2025-01-24"),
+            note: "EKS cluster deployed with 3 worker nodes. Configured Prometheus and Grafana for monitoring",
+            updatedBy: nadeeka._id,
+          },
+        ],
+      },
+      {
+        title: "Implement CI/CD Pipeline with GitHub Actions",
+        summary: "Automate build, test, and deployment process",
+        description: "Set up CI/CD pipeline using GitHub Actions for automated testing and deployment to AWS. Include staging and production environments with approval gates.",
+        assigneeId: lakshan._id,
         status: "TODO",
         priority: "Medium",
-        startDate: new Date("2025-02-03"),
-        dueDate: new Date("2025-02-15"),
-        reporterId: ruwan._id,
-        teamId: devopsTeam._id.toString(),
+        startDate: new Date("2025-02-05"),
+        dueDate: new Date("2025-02-25"),
+        reporterId: ruwanD._id,
+        teamId: infraTeam._id.toString(),
         projectId: infraProject._id.toString(),
       },
     ]);
 
-    console.log(`Created ${engTasks.length + qaTasks.length + devopsTasks.length} tasks`);
+    console.log(`Created ${tasks.length} tasks`);
 
-    // Create Subtasks for main tasks
+    // Create Subtasks
     await TaskModel.create([
       {
-        title: "Design OAuth 2.0 Flow Diagram",
-        summary: "Create technical design document for OAuth implementation",
-        description: "Document OAuth 2.0 authorization flow, token lifecycle, and security considerations",
-        assigneeId: kasun._id,
+        title: "Design Field Property Panel UI",
+        summary: "Create property editor for form field configuration",
+        description: "Design and implement property panel for configuring field attributes, validation rules, and styling",
+        assigneeId: dilini._id,
+        status: "DONE",
+        priority: "High",
+        startDate: new Date("2025-01-15"),
+        dueDate: new Date("2025-01-20"),
+        reporterId: dilini._id,
+        teamId: appXpressTeam._id.toString(),
+        parentTaskId: tasks[0]._id.toString(),
+        isSubtask: true,
+        completedAt: new Date("2025-01-20"),
+      },
+      {
+        title: "Implement Field Drag-and-Drop Logic",
+        summary: "Add drag-and-drop functionality for form fields",
+        description: "Implement drag-and-drop using react-beautiful-dnd library",
+        assigneeId: dilini._id,
         status: "DONE",
         priority: "High",
         startDate: new Date("2025-01-20"),
-        dueDate: new Date("2025-01-22"),
-        reporterId: kasun._id,
-        teamId: engineeringTeam._id.toString(),
-        parentTaskId: engTasks[0]._id.toString(),
+        dueDate: new Date("2025-01-23"),
+        reporterId: dilini._id,
+        teamId: appXpressTeam._id.toString(),
+        parentTaskId: tasks[0]._id.toString(),
         isSubtask: true,
-        completedAt: new Date("2025-01-22"),
+        completedAt: new Date("2025-01-23"),
       },
       {
-        title: "Implement Token Generation Service",
-        summary: "Build JWT token generation microservice",
-        description: "Create microservice for generating and signing JWT tokens",
-        assigneeId: kasun._id,
-        status: "DONE",
-        priority: "High",
-        startDate: new Date("2025-01-22"),
-        dueDate: new Date("2025-01-24"),
-        reporterId: kasun._id,
-        teamId: engineeringTeam._id.toString(),
-        parentTaskId: engTasks[0]._id.toString(),
-        isSubtask: true,
-        completedAt: new Date("2025-01-24"),
-      },
-      {
-        title: "Implement Token Refresh Mechanism",
-        summary: "Add refresh token logic for seamless user experience",
-        description: "Implement refresh token endpoint and automatic token renewal",
-        assigneeId: tharindu._id,
+        title: "Add Real-Time Form Preview",
+        summary: "Show live preview of form as user builds it",
+        description: "Implement real-time preview panel showing form as end-users will see it",
+        assigneeId: thilini._id,
         status: "IN_PROGRESS",
         priority: "High",
-        startDate: new Date("2025-01-24"),
+        startDate: new Date("2025-01-23"),
         dueDate: new Date("2025-01-28"),
-        reporterId: kasun._id,
-        teamId: engineeringTeam._id.toString(),
-        parentTaskId: engTasks[0]._id.toString(),
-        isSubtask: true,
-      },
-      {
-        title: "Add Rate Limiting Middleware",
-        summary: "Implement rate limiting to prevent API abuse",
-        description: "Add rate limiting middleware using Redis for distributed rate limiting",
-        assigneeId: kasun._id,
-        status: "TODO",
-        priority: "High",
-        startDate: new Date("2025-01-28"),
-        dueDate: new Date("2025-02-02"),
-        reporterId: kasun._id,
-        teamId: engineeringTeam._id.toString(),
-        parentTaskId: engTasks[0]._id.toString(),
+        reporterId: dilini._id,
+        teamId: appXpressTeam._id.toString(),
+        parentTaskId: tasks[0]._id.toString(),
         isSubtask: true,
       },
     ]);
 
     console.log("Created subtasks");
 
-    // Create Join Requests
-    await JoinRequest.create([
-      {
-        userId: users[10]._id,
-        teamId: engineeringTeam._id,
-        status: "pending",
-      },
-      {
-        userId: users[11]._id,
-        teamId: qaTeam._id,
-        status: "pending",
-      },
-    ]);
-
-    console.log("Created join requests");
-
-    // Create Assign/Help Requests
+    // Create Help Request
     await AssignRequestModel.create([
       {
-        taskId: engTasks[1]._id,
-        requesterId: tharindu._id,
-        teamId: engineeringTeam._id.toString(),
-        suggestedMemberIds: [kasun._id],
-        note: "Need help coordinating with DBA team to schedule migration window. Kasun has experience with similar migrations.",
+        taskId: tasks[3]._id,
+        requesterId: chaminda._id,
+        teamId: appXpressTeam._id.toString(),
+        suggestedMemberIds: [kasun._id, tharindu._id],
+        note: "Need help coordinating with infrastructure team to expedite Redis cluster setup. Kasun and Tharindu have experience with similar infrastructure requests.",
         status: "pending",
       },
     ]);
 
-    console.log("Created assign requests");
+    console.log("Created help request");
 
     console.log("\n✅ Seed completed successfully!");
     console.log("\n📊 Summary:");
     console.log(`- Users: ${users.length}`);
-    console.log(`- Teams: 3 (Engineering, QA, DevOps)`);
-    console.log(`- Projects: 4`);
-    console.log(`- Tasks: ${engTasks.length + qaTasks.length + devopsTasks.length}`);
-    console.log(`- Subtasks: 4`);
-    console.log(`- Join Requests: 2`);
+    console.log(`- Teams: 3 (AppXpress, CloudSuite Industrial, Infrastructure)`);
+    console.log(`- Projects: 5`);
+    console.log(`- Tasks: ${tasks.length}`);
+    console.log(`- Subtasks: 3`);
     console.log(`- Help Requests: 1`);
-    console.log("\n🔐 Login Credentials (use any email with password: password123):");
-    console.log("Lead: rajitha.fernando@infor.com");
-    console.log("Member: kasun.perera@infor.com");
+    console.log("\n🔐 Login Credentials (password: password123):");
+    console.log("Lead (AppXpress): rajitha.fernando@infor.com");
+    console.log("Member (AppXpress): savindu.amalka@infor.com (Development Intern)");
+    console.log("Member (AppXpress): kasun.perera@infor.com");
+    console.log("Lead (CloudSuite): pradeep.gunasekara@infor.com");
+    console.log("Lead (Infrastructure): ruwan.dissanayake@infor.com");
 
     process.exit(0);
   } catch (error) {
