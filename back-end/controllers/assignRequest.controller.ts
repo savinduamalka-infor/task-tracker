@@ -50,16 +50,6 @@ export const createAssignRequest = async (req: Request, res: Response) => {
       note: note.trim(),
     });
 
-    // Also push an activity entry on the task
-    await TaskModel.findByIdAndUpdate(taskId, {
-      $push: {
-        updates: {
-          note: `Help request sent to lead: "${note.trim()}"`,
-          updatedBy: user.id,
-          date: new Date(),
-        },
-      },
-    });
 
     res.status(201).json({ message: "Request sent", request });
   } catch (error) {
