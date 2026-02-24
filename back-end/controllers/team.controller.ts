@@ -161,9 +161,20 @@ export const removeTeamMember = async (req: Request, res: Response) => {
       { $set: { assigneeId: team.createdBy } }
     );
 
-    // Remove from helperIds arrays
+    // Also reassign subtasks that belong to this member
+    await TaskModel.updateMany(
+      { assigneeId: memberId, isSubtask: true },
+      { $set: { assigneeId: team.createdBy } }
+    );
+
+    // Remove from helperIds arrays (both main tasks and subtasks)
     await TaskModel.updateMany(
       { helperIds: memberId, teamId },
+      { $pull: { helperIds: memberId } }
+    );
+
+    await TaskModel.updateMany(
+      { helperIds: memberId, isSubtask: true },
       { $pull: { helperIds: memberId } }
     );
 
