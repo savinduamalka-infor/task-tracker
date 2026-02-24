@@ -510,7 +510,7 @@ const Index = () => {
             onRejectRequest={handleRejectAssignRequest}
           />
         ) : (
-          <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} tasks={tasks} />
+          <MemberDashboard onQuickUpdate={openUpdate} onTaskClick={openTaskDetail} onCreateTask={() => setCreateOpen(true)} tasks={tasks} />
         )}
 
 

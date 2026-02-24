@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge, PriorityBadge } from "@/components/StatusBadge";
-import { MessageSquarePlus, CalendarDays, Inbox } from "lucide-react";
+import { MessageSquarePlus, CalendarDays, Inbox, Plus } from "lucide-react";
 import { useTaskStore } from "@/lib/task-store";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { Task } from "@/lib/types";
@@ -11,10 +11,11 @@ import { Task } from "@/lib/types";
 interface MemberDashboardProps {
   onQuickUpdate: (taskId: string) => void;
   onTaskClick: (taskId: string) => void;
+  onCreateTask: () => void;
   tasks: Task[];
 }
 
-export function MemberDashboard({ onQuickUpdate, onTaskClick, tasks }: MemberDashboardProps) {
+export function MemberDashboard({ onQuickUpdate, onTaskClick, onCreateTask, tasks }: MemberDashboardProps) {
   const { currentUser } = useTaskStore();
 
   const myTasks = tasks.filter(
@@ -30,9 +31,14 @@ export function MemberDashboard({ onQuickUpdate, onTaskClick, tasks }: MemberDas
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">My Tasks</h2>
-        <p className="text-sm text-muted-foreground">Your current assignments and progress.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">My Tasks</h2>
+          <p className="text-sm text-muted-foreground">Your current assignments and progress.</p>
+        </div>
+        <Button onClick={onCreateTask} className="gap-2">
+          <Plus className="h-4 w-4" /> Create Task
+        </Button>
       </div>
 
       <Card>
